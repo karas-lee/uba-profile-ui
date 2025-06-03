@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UBA 프로파일 통합 실행 이력</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-title p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #94a3b8;
+        }
+
+        .nav-item:hover {
+            background: rgba(51, 65, 85, 0.3);
+            color: #e2e8f0;
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            border-left: 3px solid #6366f1;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5856eb, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(51, 65, 85, 0.7);
+            color: #e2e8f0;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(51, 65, 85, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .section {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .filter-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .timeline-container {
+            position: relative;
+            height: 120px;
+            margin-bottom: 2rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        .timeline {
+            position: relative;
+            height: 40px;
+            margin: 30px 0;
+        }
+
+        .timeline-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(51, 65, 85, 0.5);
+            transform: translateY(-50%);
+        }
+
+        .timeline-marker {
+            position: absolute;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
+
+        .timeline-marker.success {
+            background-color: #10b981;
+        }
+
+        .timeline-marker.warning {
+            background-color: #f59e0b;
+        }
+
+        .timeline-marker.error {
+            background-color: #ef4444;
+        }
+
+        .timeline-date {
+            position: absolute;
+            bottom: -25px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            transform: translateX(-50%);
+        }
+
+        .timeline-tick {
+            position: absolute;
+            top: 50%;
+            width: 1px;
+            height: 10px;
+            background: rgba(51, 65, 85, 0.5);
+            transform: translateY(-50%);
+        }
+
+        .timeline-label {
+            position: absolute;
+            top: -25px;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            transform: translateX(-50%);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+            color: #e2e8f0;
+        }
+
+        tr:hover td {
+            background: rgba(51, 65, 85, 0.2);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-badge.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .status-badge.error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .page-item {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            background: rgba(51, 65, 85, 0.3);
+            color: #e2e8f0;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .page-item:hover {
+            background: rgba(51, 65, 85, 0.5);
+        }
+
+        .page-item.active {
+            background: rgba(99, 102, 241, 0.5);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .filter-container {
+                flex-direction: column;
+            }
+            
+            .nav {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="header-title">
+                <h1>UBA 프로파일 통합 실행 이력</h1>
+                <p>모든 프로파일의 실행 이력을 중앙에서 조회하고 분석하세요</p>
+            </div>
+            <button class="btn btn-primary" onclick="window.location.href='uba_integrated_management.html'">
+                ← 통합 관리로 돌아가기
+            </button>
+        </div>
+
+        <div class="nav">
+            <a href="uba_integrated_management.html" class="nav-item">실행 관리</a>
+            <a href="uba_integrated_history.html" class="nav-item active">실행 이력</a>
+            <a href="uba_system_health.html" class="nav-item">시스템 상태</a>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">필터링</div>
+                <button class="btn btn-secondary" id="resetFilters">필터 초기화</button>
+            </div>
+            <div class="filter-container">
+                <div class="filter-group">
+                    <span class="filter-label">기간:</span>
+                    <input type="date" class="form-control" id="startDate">
+                    <span class="filter-label">~</span>
+                    <input type="date" class="form-control" id="endDate">
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">프로파일:</span>
+                    <select class="form-control" id="profileFilter">
+                        <option value="all">전체</option>
+                        <option value="profile1">일반 사용자 행동 프로파일</option>
+                        <option value="profile2">VPN 사용자 행동 프로파일</option>
+                        <option value="profile3">관리자 권한 모니터링 프로파일</option>
+                        <option value="profile4">데이터베이스 액세스 프로파일</option>
+                        <option value="profile5">네트워크 액세스 프로파일</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <span class="filter-label">상태:</span>
+                    <select class="form-control" id="statusFilter">
+                        <option value="all">전체</option>
+                        <option value="success">성공</option>
+                        <option value="warning">경고</option>
+                        <option value="error">오류</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-primary" id="applyFilters">필터 적용</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">실행 타임라인</div>
+                <div class="filter-group">
+                    <span class="filter-label">보기:</span>
+                    <select class="form-control" id="timelineView">
+                        <option value="day">일별</option>
+                        <option value="week" selected>주별</option>
+                        <option value="month">월별</option>
+                    </select>
+                </div>
+            </div>
+            <div class="timeline-container">
+                <div class="timeline">
+                    <div class="timeline-line"></div>
+                    <!-- 타임라인 틱 마크 -->
+                    <div class="timeline-tick" style="left: 0%"></div>
+                    <div class="timeline-label" style="left: 0%">6월 1일</div>
+                    <div class="timeline-tick" style="left: 20%"></div>
+                    <div class="timeline-label" style="left: 20%">6월 2일</div>
+                    <div class="timeline-tick" style="left: 40%"></div>
+                    <div class="timeline-label" style="left: 40%">6월 3일</div>
+                    <div class="timeline-tick" style="left: 60%"></div>
+                    <div class="timeline-label" style="left: 60%">6월 4일</div>
+                    <div class="timeline-tick" style="left: 80%"></div>
+                    <div class="timeline-label" style="left: 80%">6월 5일</div>
+                    <div class="timeline-tick" style="left: 100%"></div>
+                    <div class="timeline-label" style="left: 100%">6월 6일</div>
+                    
+                    <!-- 실행 이벤트 마커 -->
+                    <div class="timeline-marker success" style="left: 10%; top: 50%" title="일반 사용자 행동 프로파일 - 성공"></div>
+                    <div class="timeline-marker error" style="left: 15%; top: 50%" title="VPN 사용자 행동 프로파일 - 오류"></div>
+                    <div class="timeline-marker success" style="left: 30%; top: 50%" title="관리자 권한 모니터링 프로파일 - 성공"></div>
+                    <div class="timeline-marker warning" style="left: 45%; top: 50%" title="데이터베이스 액세스 프로파일 - 경고"></div>
+                    <div class="timeline-marker success" style="left: 60%; top: 50%" title="네트워크 액세스 프로파일 - 성공"></div>
+                    <div class="timeline-marker success" style="left: 75%; top: 50%" title="일반 사용자 행동 프로파일 - 성공"></div>
+                    <div class="timeline-marker warning" style="left: 90%; top: 50%" title="관리자 권한 모니터링 프로파일 - 경고"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <div class="section-title">실행 이력 목록</div>
+                <div class="filter-group">
+                    <span class="filter-label">정렬:</span>
+                    <select class="form-control" id="sortOrder">
+                        <option value="desc" selected>최신순</option>
+                        <option value="asc">오래된순</option>
+                    </select>
+                </div>
+            </div>
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>프로파일 ID</th>
+                        <th>프로파일 이름</th>
+                        <th>실행 시작</th>
+                        <th>실행 종료</th>
+                        <th>상태</th>
+                        <th>결과</th>
+                        <th>액션</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>profile3</td>
+                        <td>관리자 권한 모니터링 프로파일</td>
+                        <td>2025-06-05 15:30</td>
+                        <td>2025-06-05 15:45</td>
+                        <td><span class="status-badge warning">경고</span></td>
+                        <td>2개 이상 징후 발견</td>
+                        <td><button class="btn btn-secondary">상세 보기</button></td>
+                    </tr>
+                    <tr>
+                        <td>profile1</td>
+                        <td>일반 사용자 행동 프로파일</td>
+                        <td>2025-06-05 09:30</td>
+                        <td>2025-06-05 10:15</td>
+                        <td><span class="status-badge success">성공</span></td>
+                        <td>이상 없음</td>
+                        <td><button class="btn btn-secondary">상세 보기</button></td>
+                    </tr>
+                    <tr>
+                        <td>profile5</td>
+                        <td>네트워크 액세스 프로파일</td>
+                        <td>2025-06-04 15:30</td>
+                        <td>2025-06-04 15:45</td>
+                        <td><span class="status-badge success">성공</span></td>
+                        <td>이상 없음</td>
+                        <td><button class="btn btn-secondary">상세 보기</button></td>
+                    </tr>
+                    <tr>
+                        <td>profile4</td>
+                        <td>데이터베이스 액세스 프로파일</td>
+                        <td>2025-06-03 12:00</td>
+                        <td>2025-06-03 12:30</td>
+                        <td><span class="status-badge warning">경고</span></td>
+                        <td>1개 이상 징후 발견</td>
+                        <td><button class="btn btn-secondary">상세 보기</button></td>
+                    </tr>
+                    <tr>
+                        <td>profile3</td>
+                        <td>관리자 권한 모니터링 프로파일</td>
+                        <td>2025-06-02 10:00</td>
+                        <td>2025-06-02 10:15</td>
+                        <td><span class="status-badge success">성공</span></td>
+                        <td>이상 없음</td>
+                        <td><button class="btn btn-secondary">상세 보기</button></td>
+                    </tr>
+                    <tr>
+                        <td>profile2</td>
+                        <td>VPN 사용자 행동 프로파일</td>
+                        <td>2025-06-01 12:00</td>
+                        <td>2025-06-01 12:15</td>
+                        <td><span class="status-badge error">오류</span></td>
+                        <td>실행 실패</td>
+                        <td><button class="btn btn-secondary">상세 보기</button></td>
+                    </tr>
+                    <tr>
+                        <td>profile1</td>
+                        <td>일반 사용자 행동 프로파일</td>
+                        <td>2025-06-01 09:30</td>
+                        <td>2025-06-01 10:15</td>
+                        <td><span class="status-badge success">성공</span></td>
+                        <td>이상 없음</td>
+                        <td><button class="btn btn-secondary">상세 보기</button></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="pagination">
+                <div class="page-item active">1</div>
+                <div class="page-item">2</div>
+                <div class="page-item">3</div>
+                <div class="page-item">4</div>
+                <div class="page-item">5</div>
+                <div class="page-item">></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 현재 날짜로 기본값 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(today.getDate() - 7);
+            
+            const formatDate = (date) => {
+                const yyyy = date.getFullYear();
+                const mm = String(date.getMonth() + 1).padStart(2, '0');
+                const dd = String(date.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            };
+            
+            document.getElementById('startDate').value = formatDate(oneWeekAgo);
+            document.getElementById('endDate').value = formatDate(today);
+            
+            // 타임라인 마커에 툴크 기능 추가
+            const markers = document.querySelectorAll('.timeline-marker');
+            markers.forEach(marker => {
+                marker.addEventListener('mouseover', function() {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.textContent = this.title;
+                    tooltip.style.position = 'absolute';
+                    tooltip.style.top = '-30px';
+                    tooltip.style.left = '50%';
+                    tooltip.style.transform = 'translateX(-50%)';
+                    tooltip.style.background = 'rgba(15, 23, 42, 0.9)';
+                    tooltip.style.color = '#e2e8f0';
+                    tooltip.style.padding = '0.5rem 0.75rem';
+                    tooltip.style.borderRadius = '0.375rem';
+                    tooltip.style.fontSize = '0.8rem';
+                    tooltip.style.whiteSpace = 'nowrap';
+                    tooltip.style.zIndex = '10';
+                    
+                    this.appendChild(tooltip);
+                });
+                
+                marker.addEventListener('mouseout', function() {
+                    const tooltip = this.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.remove();
+                    }
+                });
+            });
+            
+            // 필터 적용 버튼 클릭 이벤트
+            document.getElementById('applyFilters').addEventListener('click', function() {
+                const startDate = document.getElementById('startDate').value;
+                const endDate = document.getElementById('endDate').value;
+                const profile = document.getElementById('profileFilter').value;
+                const status = document.getElementById('statusFilter').value;
+                
+                console.log('필터 적용:', { startDate, endDate, profile, status });
+                // TODO: 필터링 로직 구현
+                alert('필터가 적용되었습니다.');
+            });
+            
+            // 필터 초기화 버튼 클릭 이벤트
+            document.getElementById('resetFilters').addEventListener('click', function() {
+                document.getElementById('startDate').value = formatDate(oneWeekAgo);
+                document.getElementById('endDate').value = formatDate(today);
+                document.getElementById('profileFilter').value = 'all';
+                document.getElementById('statusFilter').value = 'all';
+                
+                console.log('필터 초기화');
+                // TODO: 필터링 초기화 로직 구현
+                alert('필터가 초기화되었습니다.');
+            });
+            
+            // 타임라인 뷰 변경 이벤트
+            document.getElementById('timelineView').addEventListener('change', function() {
+                const view = this.value;
+                console.log('타임라인 뷰 변경:', view);
+                // TODO: 타임라인 뷰 변경 로직 구현
+                updateTimeline(view);
+            });
+            
+            // 정렬 순서 변경 이벤트
+            document.getElementById('sortOrder').addEventListener('change', function() {
+                const order = this.value;
+                console.log('정렬 순서 변경:', order);
+                // TODO: 정렬 순서 변경 로직 구현
+                sortHistoryTable(order);
+            });
+            
+            // 페이지네이션 클릭 이벤트
+            document.querySelectorAll('.page-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    document.querySelector('.page-item.active').classList.remove('active');
+                    this.classList.add('active');
+                    
+                    const page = this.textContent;
+                    console.log('페이지 변경:', page);
+                    // TODO: 페이지 변경 로직 구현
+                });
+            });
+            
+            // 상세 보기 버튼 클릭 이벤트
+            document.querySelectorAll('table button').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const row = this.closest('tr');
+                    const profileId = row.cells[0].textContent;
+                    const profileName = row.cells[1].textContent;
+                    const executionDate = row.cells[2].textContent;
+                    
+                    console.log('상세 보기:', { profileId, profileName, executionDate });
+                    // TODO: 상세 보기 페이지로 이동 또는 모달 표시
+                    alert(`${profileName}(${executionDate}) 상세 정보를 표시합니다.`);
+                });
+            });
+        });
+        
+        // 타임라인 업데이트 함수
+        function updateTimeline(view) {
+            // 실제 구현에서는 서버에서 데이터를 가져와 타임라인을 업데이트
+            const timelineLabels = document.querySelectorAll('.timeline-label');
+            
+            if (view === 'day') {
+                timelineLabels[0].textContent = '6월 1일';
+                timelineLabels[1].textContent = '6월 2일';
+                timelineLabels[2].textContent = '6월 3일';
+                timelineLabels[3].textContent = '6월 4일';
+                timelineLabels[4].textContent = '6월 5일';
+                timelineLabels[5].textContent = '6월 6일';
+            } else if (view === 'week') {
+                timelineLabels[0].textContent = '1주차';
+                timelineLabels[1].textContent = '2주차';
+                timelineLabels[2].textContent = '3주차';
+                timelineLabels[3].textContent = '4주차';
+                timelineLabels[4].textContent = '5주차';
+                timelineLabels[5].textContent = '6주차';
+            } else if (view === 'month') {
+                timelineLabels[0].textContent = '1월';
+                timelineLabels[1].textContent = '2월';
+                timelineLabels[2].textContent = '3월';
+                timelineLabels[3].textContent = '4월';
+                timelineLabels[4].textContent = '5월';
+                timelineLabels[5].textContent = '6월';
+            }
+        }
+        
+        // 이력 테이블 정렬 함수
+        function sortHistoryTable(order) {
+            const table = document.getElementById('historyTable');
+            const rows = Array.from(table.querySelectorAll('tbody tr'));
+            
+            rows.sort((a, b) => {
+                const dateA = new Date(a.cells[2].textContent);
+                const dateB = new Date(b.cells[2].textContent);
+                
+                if (order === 'asc') {
+                    return dateA - dateB;
+                } else {
+                    return dateB - dateA;
+                }
+            });
+            
+            // 테이블 재구성
+            const tbody = table.querySelector('tbody');
+            tbody.innerHTML = '';
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+</body>
+</html> 
