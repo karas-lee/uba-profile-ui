@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UBA 시스템 상태</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-title p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .profile-header {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .profile-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .meta-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .meta-value {
+            font-size: 1.1rem;
+            color: #e2e8f0;
+        }
+
+        .profile-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: #e2e8f0;
+        }
+
+        .nav-item.active {
+            color: #6366f1;
+            border-bottom: 2px solid #6366f1;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5856eb, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(51, 65, 85, 0.7);
+            color: #e2e8f0;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(51, 65, 85, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .dashboard-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* 상태 아이콘 스타일 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-badge.good {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .status-badge.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .status-badge.critical {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        /* 시스템 상태 개요 스타일 */
+        .status-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .status-card {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .status-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .status-card.good::before {
+            background: linear-gradient(90deg, #10b981, #059669);
+        }
+        
+        .status-card.warning::before {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+        
+        .status-card.critical::before {
+            background: linear-gradient(90deg, #ef4444, #dc2626);
+        }
+        
+        .status-card-title {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-bottom: 1rem;
+        }
+        
+        .status-card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-card.good .status-card-value {
+            color: #10b981;
+        }
+        
+        .status-card.warning .status-card-value {
+            color: #f59e0b;
+        }
+        
+        .status-card.critical .status-card-value {
+            color: #ef4444;
+        }
+        
+        .status-card-info {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+        
+        .uptime-box {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .uptime-label {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+        
+        .uptime-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        
+        .uptime-details {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        
+        .uptime-detail {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+        
+        .uptime-detail span {
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-left: 0.5rem;
+        }
+        
+        /* 경고 메시지 스타일 */
+        .alert-message {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0.5rem;
+        }
+        
+        .alert-message.critical {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .alert-message .alert-title {
+            color: #f59e0b;
+        }
+        
+        .alert-message.critical .alert-title {
+            color: #ef4444;
+        }
+        
+        .alert-content {
+            font-size: 0.95rem;
+            color: #94a3b8;
+        }
+        
+        @media (max-width: 768px) {
+            .profile-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .uptime-details {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+
+        /* 리소스 모니터링 관련 추가 스타일 */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .chart-container {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            height: 250px;
+            position: relative;
+        }
+        
+        .chart-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .select-input {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .select-input:focus {
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+        }
+        
+        .resource-details {
+            margin-top: 2rem;
+        }
+        
+        .detail-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 1rem;
+        }
+        
+        .resource-table-wrapper {
+            overflow-x: auto;
+        }
+        
+        .resource-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .resource-table th,
+        .resource-table td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+        
+        .resource-table th {
+            color: #94a3b8;
+            font-weight: 500;
+            background: rgba(15, 23, 42, 0.5);
+        }
+        
+        .resource-table td {
+            color: #e2e8f0;
+        }
+        
+        .resource-table tbody tr:hover {
+            background: rgba(51, 65, 85, 0.2);
+        }
+        
+        @media (max-width: 1024px) {
+            .chart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 로그 분석 및 알림 관련 스타일 */
+        .log-alerts {
+            margin-bottom: 1.5rem;
+        }
+        
+        .alert-message {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .alert-message:hover {
+            transform: translateX(2px);
+            background: rgba(245, 158, 11, 0.15);
+        }
+        
+        .alert-message.critical {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+        }
+        
+        .alert-message.critical:hover {
+            background: rgba(239, 68, 68, 0.15);
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .alert-message .alert-title {
+            color: #f59e0b;
+        }
+        
+        .alert-message.critical .alert-title {
+            color: #ef4444;
+        }
+        
+        .alert-icon {
+            font-size: 1.2rem;
+        }
+        
+        .alert-content {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+        }
+        
+        .alert-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        
+        .alert-time {
+            font-family: monospace;
+        }
+        
+        .alert-actions {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .btn-link {
+            background: none;
+            border: none;
+            color: #6366f1;
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-link:hover {
+            color: #4f46e5;
+            text-decoration: underline;
+        }
+        
+        .btn-link.disabled {
+            color: #64748b;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .btn-link.disabled:hover {
+            text-decoration: none;
+        }
+        
+        /* 로그 뷰어 스타일 */
+        .log-viewer {
+            border-top: 1px solid rgba(51, 65, 85, 0.3);
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+        }
+        
+        .log-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            align-items: center;
+        }
+        
+        .log-search {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .search-input {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        
+        .search-input:focus {
+            border-color: rgba(99, 102, 241, 0.5);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+        }
+        
+        .btn-sm {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.85rem;
+        }
+        
+        .icon {
+            display: inline-block;
+            margin-right: 0.25rem;
+        }
+        
+        .log-container {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.5rem;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+        
+        .log-entry {
+            padding: 0.75rem 1rem;
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.2);
+            font-family: monospace;
+            font-size: 0.9rem;
+            align-items: center;
+        }
+        
+        .log-entry:hover {
+            background: rgba(51, 65, 85, 0.2);
+        }
+        
+        .log-level {
+            min-width: 60px;
+            font-weight: 600;
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.25rem;
+            text-align: center;
+            font-size: 0.8rem;
+        }
+        
+        .log-entry.error .log-level {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        .log-entry.warning .log-level {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+        
+        .log-entry.info .log-level {
+            background: rgba(14, 165, 233, 0.1);
+            color: #0ea5e9;
+        }
+        
+        .log-time {
+            color: #94a3b8;
+            min-width: 80px;
+        }
+        
+        .log-content {
+            flex: 1;
+            color: #e2e8f0;
+        }
+        
+        .log-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .pagination-info {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* 프로세스 모니터링 관련 스타일 */
+        .processes-summary {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .process-stat {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.75rem;
+            padding: 1.2rem;
+            min-width: 150px;
+            flex: 1;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+        
+        .process-table-wrapper {
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+        }
+        
+        .process-table {
+            width: 100%;
+        }
+        
+        .table-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+        
+        .btn-icon {
+            background: rgba(51, 65, 85, 0.3);
+            border: none;
+            border-radius: 0.25rem;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-icon:hover {
+            background: rgba(99, 102, 241, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .section-divider {
+            height: 1px;
+            background: rgba(51, 65, 85, 0.3);
+            margin: 1.5rem 0;
+        }
+        
+        .card-subtitle {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+        
+        .queue-status-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+        
+        .queue-chart-container {
+            flex: 1;
+            min-width: 300px;
+            height: 250px;
+        }
+        
+        .queue-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-width: 250px;
+        }
+        
+        .queue-stat-card {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        
+        .queue-stat-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+        }
+        
+        .queue-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 0.25rem;
+        }
+        
+        .queue-stat-info {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: rgba(51, 65, 85, 0.3);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        }
+        
+        .progress-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: right;
+        }
+        
+        @media (max-width: 1024px) {
+            .queue-status-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="header-title">
+                <h1>UBA 시스템 상태</h1>
+                <p>시스템 리소스 및 성능 지표 모니터링</p>
+            </div>
+            <button class="btn btn-secondary" onclick="goBackToList()">
+                ← 목록으로 돌아가기
+            </button>
+        </div>
+
+        <div class="profile-header">
+            <div class="profile-info">
+                <h2 class="profile-name" id="profileName">UBA 프로파일 이름</h2>
+                <div class="profile-meta">
+                    <div class="profile-meta-item">
+                        <div class="meta-label">프로파일 유형</div>
+                        <div class="meta-value" id="profileType">사용자 프로파일</div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <div class="meta-label">로그 소스</div>
+                        <div class="meta-value" id="logSource">Windows 이벤트 로그</div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <div class="meta-label">생성일</div>
+                        <div class="meta-value" id="creationDate">2025-04-15</div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <div class="meta-label">최근 분석일</div>
+                        <div class="meta-value" id="lastAnalysisDate">2025-06-01</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-nav">
+            <a href="uba_profile_results.html" class="nav-item">분석 결과</a>
+            <a href="uba_profile_management.html" class="nav-item">실행 관리</a>
+            <a href="uba_execution_history.html" class="nav-item">실행 이력</a>
+            <a href="uba_system_health.html" class="nav-item active">시스템 상태</a>
+        </div>
+        
+        <!-- 시스템 상태 개요 -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">시스템 상태 개요</h3>
+                <div class="last-updated" id="lastUpdated">최종 업데이트: 2025-06-01 12:30</div>
+            </div>
+            
+            <div class="uptime-box">
+                <div class="uptime-label">시스템 업타임</div>
+                <div class="uptime-value">32일 18시간 45분</div>
+                <div class="uptime-details">
+                    <div class="uptime-detail">마지막 재부팅: <span>2025-04-30 17:45</span></div>
+                    <div class="uptime-detail">계획된 유지보수: <span>2025-07-15 00:00</span></div>
+                    <div class="uptime-detail">가용성: <span>99.98%</span></div>
+                </div>
+            </div>
+            
+            <div class="alert-message">
+                <div class="alert-title">⚠️ 주의: 디스크 공간 부족</div>
+                <div class="alert-content">
+                    /var/log 디렉토리의 여유 공간이 15% 미만입니다. 로그 로테이션을 검토하거나 불필요한 로그 파일을 정리하세요.
+                </div>
+            </div>
+            
+            <div class="status-overview">
+                <div class="status-card good">
+                    <div class="status-card-title">CPU 사용량</div>
+                    <div class="status-card-value">32%</div>
+                    <div class="status-card-info">24시간 평균: 29%</div>
+                </div>
+                
+                <div class="status-card good">
+                    <div class="status-card-title">메모리 사용량</div>
+                    <div class="status-card-value">45%</div>
+                    <div class="status-card-info">총 32GB 중 14.4GB 사용</div>
+                </div>
+                
+                <div class="status-card warning">
+                    <div class="status-card-title">디스크 사용량</div>
+                    <div class="status-card-value">85%</div>
+                    <div class="status-card-info">총 2TB 중 1.7TB 사용</div>
+                </div>
+                
+                <div class="status-card good">
+                    <div class="status-card-title">네트워크 사용량</div>
+                    <div class="status-card-value">240Mbps</div>
+                    <div class="status-card-info">대역폭 1Gbps의 24%</div>
+                </div>
+            </div>
+            
+            <div class="status-overview">
+                <div class="status-card good">
+                    <div class="status-card-title">DB 연결</div>
+                    <div class="status-card-value">108</div>
+                    <div class="status-card-info">최대 500개 중 22% 사용</div>
+                </div>
+                
+                <div class="status-card warning">
+                    <div class="status-card-title">분석 큐 깊이</div>
+                    <div class="status-card-value">24</div>
+                    <div class="status-card-info">평균 대기 시간: 15분</div>
+                </div>
+                
+                <div class="status-card good">
+                    <div class="status-card-title">API 응답 시간</div>
+                    <div class="status-card-value">280ms</div>
+                    <div class="status-card-info">24시간 평균: 320ms</div>
+                </div>
+                
+                <div class="status-card good">
+                    <div class="status-card-title">활성 세션</div>
+                    <div class="status-card-value">15</div>
+                    <div class="status-card-info">총 사용자: 42명</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 리소스 모니터링 -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">리소스 모니터링</h3>
+                <div class="card-actions">
+                    <select id="timeRange" class="select-input">
+                        <option value="1h">1시간</option>
+                        <option value="6h">6시간</option>
+                        <option value="24h" selected>24시간</option>
+                        <option value="7d">7일</option>
+                        <option value="30d">30일</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="chart-grid">
+                <div class="chart-container">
+                    <h4 class="chart-title">CPU 사용량 (%)</h4>
+                    <canvas id="cpuChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h4 class="chart-title">메모리 사용량 (GB)</h4>
+                    <canvas id="memoryChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h4 class="chart-title">디스크 I/O (MB/s)</h4>
+                    <canvas id="diskIOChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h4 class="chart-title">네트워크 트래픽 (Mbps)</h4>
+                    <canvas id="networkChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="resource-details">
+                <h4 class="detail-title">상세 리소스 정보</h4>
+                
+                <div class="resource-table-wrapper">
+                    <table class="resource-table">
+                        <thead>
+                            <tr>
+                                <th>리소스</th>
+                                <th>현재 값</th>
+                                <th>최소</th>
+                                <th>최대</th>
+                                <th>평균</th>
+                                <th>임계치</th>
+                                <th>상태</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>CPU(시스템)</td>
+                                <td>32%</td>
+                                <td>18%</td>
+                                <td>67%</td>
+                                <td>29%</td>
+                                <td>80%</td>
+                                <td><span class="status-badge good">정상</span></td>
+                            </tr>
+                            <tr>
+                                <td>CPU(UBA 프로세스)</td>
+                                <td>24%</td>
+                                <td>12%</td>
+                                <td>45%</td>
+                                <td>22%</td>
+                                <td>60%</td>
+                                <td><span class="status-badge good">정상</span></td>
+                            </tr>
+                            <tr>
+                                <td>메모리(시스템)</td>
+                                <td>14.4GB</td>
+                                <td>10.2GB</td>
+                                <td>16.8GB</td>
+                                <td>13.2GB</td>
+                                <td>24GB</td>
+                                <td><span class="status-badge good">정상</span></td>
+                            </tr>
+                            <tr>
+                                <td>메모리(UBA 프로세스)</td>
+                                <td>6.8GB</td>
+                                <td>4.2GB</td>
+                                <td>7.5GB</td>
+                                <td>5.9GB</td>
+                                <td>8GB</td>
+                                <td><span class="status-badge warning">주의</span></td>
+                            </tr>
+                            <tr>
+                                <td>디스크 사용량(/var/log)</td>
+                                <td>85%</td>
+                                <td>70%</td>
+                                <td>87%</td>
+                                <td>78%</td>
+                                <td>85%</td>
+                                <td><span class="status-badge warning">주의</span></td>
+                            </tr>
+                            <tr>
+                                <td>디스크 I/O(읽기)</td>
+                                <td>12MB/s</td>
+                                <td>2MB/s</td>
+                                <td>25MB/s</td>
+                                <td>8MB/s</td>
+                                <td>50MB/s</td>
+                                <td><span class="status-badge good">정상</span></td>
+                            </tr>
+                            <tr>
+                                <td>디스크 I/O(쓰기)</td>
+                                <td>8MB/s</td>
+                                <td>1MB/s</td>
+                                <td>18MB/s</td>
+                                <td>6MB/s</td>
+                                <td>40MB/s</td>
+                                <td><span class="status-badge good">정상</span></td>
+                            </tr>
+                            <tr>
+                                <td>네트워크 트래픽(인바운드)</td>
+                                <td>95Mbps</td>
+                                <td>20Mbps</td>
+                                <td>180Mbps</td>
+                                <td>85Mbps</td>
+                                <td>500Mbps</td>
+                                <td><span class="status-badge good">정상</span></td>
+                            </tr>
+                            <tr>
+                                <td>네트워크 트래픽(아웃바운드)</td>
+                                <td>145Mbps</td>
+                                <td>15Mbps</td>
+                                <td>220Mbps</td>
+                                <td>110Mbps</td>
+                                <td>500Mbps</td>
+                                <td><span class="status-badge good">정상</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 로그 분석 및 알림 -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">로그 분석 및 알림</h3>
+                <div class="card-actions">
+                    <select id="logLevel" class="select-input">
+                        <option value="all">모든 로그</option>
+                        <option value="error" selected>오류</option>
+                        <option value="warning">경고</option>
+                        <option value="info">정보</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="log-alerts">
+                <div class="alert-message critical">
+                    <div class="alert-title">
+                        <div class="alert-icon">❌</div>
+                        <div>심각: 분석 엔진 충돌</div>
+                    </div>
+                    <div class="alert-content">
+                        UBA 분석 엔진이 메모리 오류로 종료되었습니다. 자동 복구를 시작합니다.
+                    </div>
+                    <div class="alert-meta">
+                        <div class="alert-time">2025-06-01 10:15:22</div>
+                        <div class="alert-actions">
+                            <button class="btn-link">상세 보기</button>
+                            <button class="btn-link">무시</button>
+                            <button class="btn-link">해결됨</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-message">
+                    <div class="alert-title">
+                        <div class="alert-icon">⚠️</div>
+                        <div>경고: DB 연결 지연</div>
+                    </div>
+                    <div class="alert-content">
+                        데이터베이스 연결 지연이 2000ms를 초과했습니다. 데이터베이스 서버 부하를 확인하세요.
+                    </div>
+                    <div class="alert-meta">
+                        <div class="alert-time">2025-06-01 09:47:15</div>
+                        <div class="alert-actions">
+                            <button class="btn-link">상세 보기</button>
+                            <button class="btn-link">무시</button>
+                            <button class="btn-link">해결됨</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-message">
+                    <div class="alert-title">
+                        <div class="alert-icon">⚠️</div>
+                        <div>경고: 디스크 공간 부족</div>
+                    </div>
+                    <div class="alert-content">
+                        /var/log 디렉토리의 여유 공간이 15% 미만입니다. 로그 로테이션을 검토하거나 불필요한 로그 파일을 정리하세요.
+                    </div>
+                    <div class="alert-meta">
+                        <div class="alert-time">2025-06-01 08:30:05</div>
+                        <div class="alert-actions">
+                            <button class="btn-link">상세 보기</button>
+                            <button class="btn-link">무시</button>
+                            <button class="btn-link">해결됨</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="log-viewer">
+                <h4 class="detail-title">시스템 로그</h4>
+                <div class="log-controls">
+                    <button class="btn btn-secondary btn-sm" onclick="refreshLogs()">
+                        <span class="icon">↻</span> 새로고침
+                    </button>
+                    <div class="log-search">
+                        <input type="text" placeholder="로그 검색..." class="search-input">
+                        <button class="btn btn-secondary btn-sm">검색</button>
+                    </div>
+                </div>
+                
+                <div class="log-container">
+                    <div class="log-entry error">
+                        <div class="log-level">ERROR</div>
+                        <div class="log-time">10:15:22</div>
+                        <div class="log-content">UBA 분석 엔진이 메모리 오류로 종료되었습니다. [uba_engine.py:245]</div>
+                    </div>
+                    
+                    <div class="log-entry error">
+                        <div class="log-level">ERROR</div>
+                        <div class="log-time">10:15:20</div>
+                        <div class="log-content">메모리 할당 오류: 메모리 부족 (코드: 0xC000012D) [memory_manager.py:128]</div>
+                    </div>
+                    
+                    <div class="log-entry warning">
+                        <div class="log-level">WARN</div>
+                        <div class="log-time">09:47:15</div>
+                        <div class="log-content">데이터베이스 연결 지연이 2000ms를 초과했습니다. [db_connector.py:78]</div>
+                    </div>
+                    
+                    <div class="log-entry warning">
+                        <div class="log-level">WARN</div>
+                        <div class="log-time">09:45:33</div>
+                        <div class="log-content">데이터베이스 연결 시도 실패, 재시도 중 (1/3) [db_connector.py:65]</div>
+                    </div>
+                    
+                    <div class="log-entry warning">
+                        <div class="log-level">WARN</div>
+                        <div class="log-time">08:30:05</div>
+                        <div class="log-content">/var/log 디렉토리의 여유 공간이 15% 미만입니다. [disk_monitor.py:98]</div>
+                    </div>
+                    
+                    <div class="log-entry info">
+                        <div class="log-level">INFO</div>
+                        <div class="log-time">08:00:00</div>
+                        <div class="log-content">UBA 프로파일 'User-Admin-Group' 분석이 시작되었습니다. [profile_analyzer.py:210]</div>
+                    </div>
+                    
+                    <div class="log-entry info">
+                        <div class="log-level">INFO</div>
+                        <div class="log-time">07:59:58</div>
+                        <div class="log-content">로그 수집기가 새로운 Windows 이벤트 로그 5432개를 수집했습니다. [log_collector.py:155]</div>
+                    </div>
+                </div>
+                
+                <div class="log-pagination">
+                    <button class="btn-link disabled">이전</button>
+                    <span class="pagination-info">페이지 1/12</span>
+                    <button class="btn-link">다음</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 프로세스 모니터링 -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">프로세스 모니터링</h3>
+                <div class="card-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="refreshProcesses()">
+                        <span class="icon">↻</span> 새로고침
+                    </button>
+                </div>
+            </div>
+            
+            <div class="processes-summary">
+                <div class="process-stat">
+                    <div class="stat-label">활성 프로세스</div>
+                    <div class="stat-value">6</div>
+                </div>
+                <div class="process-stat">
+                    <div class="stat-label">작업 큐</div>
+                    <div class="stat-value">24</div>
+                </div>
+                <div class="process-stat">
+                    <div class="stat-label">완료된 작업</div>
+                    <div class="stat-value">1,248</div>
+                </div>
+                <div class="process-stat">
+                    <div class="stat-label">실패한 작업</div>
+                    <div class="stat-value">7</div>
+                </div>
+            </div>
+            
+            <div class="process-table-wrapper">
+                <table class="resource-table process-table">
+                    <thead>
+                        <tr>
+                            <th>프로세스 ID</th>
+                            <th>이름</th>
+                            <th>상태</th>
+                            <th>CPU</th>
+                            <th>메모리</th>
+                            <th>시작 시간</th>
+                            <th>실행 시간</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>uba-engine-001</td>
+                            <td>UBA 분석 엔진</td>
+                            <td><span class="status-badge good">실행 중</span></td>
+                            <td>24%</td>
+                            <td>6.8GB</td>
+                            <td>2025-05-30 00:00</td>
+                            <td>2d 12h 30m</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn-icon" title="재시작"><span>↻</span></button>
+                                    <button class="btn-icon" title="일시정지"><span>⏸</span></button>
+                                    <button class="btn-icon" title="중지"><span>⏹</span></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>uba-collect-001</td>
+                            <td>로그 수집기</td>
+                            <td><span class="status-badge good">실행 중</span></td>
+                            <td>18%</td>
+                            <td>2.4GB</td>
+                            <td>2025-05-30 00:00</td>
+                            <td>2d 12h 30m</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn-icon" title="재시작"><span>↻</span></button>
+                                    <button class="btn-icon" title="일시정지"><span>⏸</span></button>
+                                    <button class="btn-icon" title="중지"><span>⏹</span></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>uba-api-001</td>
+                            <td>API 서버</td>
+                            <td><span class="status-badge good">실행 중</span></td>
+                            <td>12%</td>
+                            <td>1.6GB</td>
+                            <td>2025-05-30 00:00</td>
+                            <td>2d 12h 30m</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn-icon" title="재시작"><span>↻</span></button>
+                                    <button class="btn-icon" title="일시정지"><span>⏸</span></button>
+                                    <button class="btn-icon" title="중지"><span>⏹</span></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>uba-db-001</td>
+                            <td>데이터베이스 커넥터</td>
+                            <td><span class="status-badge warning">주의</span></td>
+                            <td>5%</td>
+                            <td>0.8GB</td>
+                            <td>2025-05-30 00:00</td>
+                            <td>2d 12h 30m</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn-icon" title="재시작"><span>↻</span></button>
+                                    <button class="btn-icon" title="일시정지"><span>⏸</span></button>
+                                    <button class="btn-icon" title="중지"><span>⏹</span></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>uba-alert-001</td>
+                            <td>알림 관리자</td>
+                            <td><span class="status-badge good">실행 중</span></td>
+                            <td>3%</td>
+                            <td>0.5GB</td>
+                            <td>2025-05-30 00:00</td>
+                            <td>2d 12h 30m</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn-icon" title="재시작"><span>↻</span></button>
+                                    <button class="btn-icon" title="일시정지"><span>⏸</span></button>
+                                    <button class="btn-icon" title="중지"><span>⏹</span></button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>uba-sched-001</td>
+                            <td>스케줄러</td>
+                            <td><span class="status-badge good">실행 중</span></td>
+                            <td>1%</td>
+                            <td>0.3GB</td>
+                            <td>2025-05-30 00:00</td>
+                            <td>2d 12h 30m</td>
+                            <td>
+                                <div class="table-actions">
+                                    <button class="btn-icon" title="재시작"><span>↻</span></button>
+                                    <button class="btn-icon" title="일시정지"><span>⏸</span></button>
+                                    <button class="btn-icon" title="중지"><span>⏹</span></button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section-divider"></div>
+            
+            <div class="card-header">
+                <h4 class="card-subtitle">큐 상태</h4>
+            </div>
+            
+            <div class="queue-status-container">
+                <div class="queue-chart-container">
+                    <canvas id="queueChart" height="200"></canvas>
+                </div>
+                
+                <div class="queue-stats">
+                    <div class="queue-stat-card">
+                        <h5 class="queue-stat-title">분석 큐</h5>
+                        <div class="queue-stat-value">15</div>
+                        <div class="queue-stat-info">평균 처리 시간: 8분 35초</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 30%;"></div>
+                        </div>
+                        <div class="progress-label">용량: 30% (15/50)</div>
+                    </div>
+                    
+                    <div class="queue-stat-card">
+                        <h5 class="queue-stat-title">로그 수집 큐</h5>
+                        <div class="queue-stat-value">6</div>
+                        <div class="queue-stat-info">평균 처리 시간: 2분 15초</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 12%;"></div>
+                        </div>
+                        <div class="progress-label">용량: 12% (6/50)</div>
+                    </div>
+                    
+                    <div class="queue-stat-card">
+                        <h5 class="queue-stat-title">알림 큐</h5>
+                        <div class="queue-stat-value">3</div>
+                        <div class="queue-stat-info">평균 처리 시간: 45초</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 6%;"></div>
+                        </div>
+                        <div class="progress-label">용량: 6% (3/50)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="nav-buttons">
+            <button class="btn btn-secondary" onclick="goBackToList()">목록으로 돌아가기</button>
+            <button class="btn btn-primary" onclick="refreshSystemStatus()">상태 새로고침</button>
+        </div>
+    </div>
+
+    <!-- Chart.js 라이브러리 추가 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        let profileData = null;
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            // URL에서 프로필 ID 가져오기
+            const urlParams = new URLSearchParams(window.location.search);
+            const profileId = urlParams.get('id');
+            
+            if (profileId) {
+                loadProfileSystemHealth(profileId);
+                initCharts(); // 차트 초기화
+                initQueueChart(); // 큐 차트 초기화
+            } else {
+                alert('프로필 정보를 찾을 수 없습니다.');
+                goBackToList();
+            }
+            
+            // 시간 범위 변경 이벤트 리스너
+            document.getElementById('timeRange').addEventListener('change', function() {
+                updateCharts(this.value);
+            });
+            
+            // 로그 레벨 필터 이벤트 리스너
+            document.getElementById('logLevel').addEventListener('change', function() {
+                filterLogs(this.value);
+            });
+        });
+        
+        // 프로필 정보 로드
+        function loadProfileSystemHealth(profileId) {
+            // 로컬 스토리지에서 프로필 기본 정보 가져오기
+            const profiles = localStorage.getItem('ubaProfiles');
+            if (!profiles) {
+                alert('프로필 정보를 찾을 수 없습니다.');
+                goBackToList();
+                return;
+            }
+            
+            const profileList = JSON.parse(profiles);
+            profileData = profileList.find(p => p.id === profileId);
+            
+            if (!profileData) {
+                alert('해당 프로필을 찾을 수 없습니다.');
+                goBackToList();
+                return;
+            }
+            
+            // 프로필 정보 표시
+            displayProfileInfo(profileData);
+            
+            // 시스템 상태 정보는 실제로는 API에서 가져와야 함
+            // 여기서는 모의 데이터로 표시
+            loadSystemStatus();
+        }
+        
+        // 프로필 기본 정보 표시
+        function displayProfileInfo(profile) {
+            document.getElementById('profileName').textContent = profile.name;
+            
+            // 프로파일 유형
+            let profileTypeText;
+            switch (profile.profileType) {
+                case 'user': profileTypeText = '사용자'; break;
+                case 'entity': profileTypeText = '엔터티'; break;
+                case 'hybrid': profileTypeText = '하이브리드'; break;
+                default: profileTypeText = '사용자 정의';
+            }
+            document.getElementById('profileType').textContent = profileTypeText + ' 프로파일';
+            
+            // 로그 소스
+            document.getElementById('logSource').textContent = profile.logSourceName || '-';
+            
+            // 생성일
+            if (profile.createdAt) {
+                const createdDate = new Date(profile.createdAt);
+                document.getElementById('creationDate').textContent = formatDate(createdDate);
+            } else {
+                document.getElementById('creationDate').textContent = '-';
+            }
+            
+            // 최근 분석일은 모의 데이터로 표시
+            document.getElementById('lastAnalysisDate').textContent = '2025-06-01';
+        }
+        
+        // 날짜 포맷팅 함수
+        function formatDate(date) {
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).replace(/\. /g, '-').replace('.', '');
+        }
+        
+        // 시스템 상태 로드
+        function loadSystemStatus() {
+            // 실제로는 여기서 API를 통해 시스템 상태 정보를 가져와야 함
+            // 이 예제에서는 모의 데이터를 이미 HTML에 포함시켜 표시
+        }
+        
+        // 목록으로 돌아가기
+        function goBackToList() {
+            window.location.href = 'index.html';
+        }
+        
+        // 시스템 상태 새로고침
+        function refreshSystemStatus() {
+            alert('시스템 상태 정보를 새로고침합니다.');
+            // 실제로는 여기서 API 호출을 통해 최신 상태 정보를 가져옴
+            
+            // 새로고침 시간 업데이트
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+            
+            const dateString = formatDate(now);
+            document.getElementById('lastUpdated').textContent = `최종 업데이트: ${dateString} ${timeString}`;
+        }
+        
+        // 차트 초기화
+        function initCharts() {
+            // CPU 차트
+            const cpuCtx = document.getElementById('cpuChart').getContext('2d');
+            const cpuChart = new Chart(cpuCtx, {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(24),
+                    datasets: [
+                        {
+                            label: '시스템 CPU',
+                            data: generateRandomData(24, 20, 70),
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'UBA 프로세스',
+                            data: generateRandomData(24, 10, 50),
+                            borderColor: 'rgba(139, 92, 246, 1)',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: getChartOptions('CPU 사용량 (%)', 100)
+            });
+            
+            // 메모리 차트
+            const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+            const memoryChart = new Chart(memoryCtx, {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(24),
+                    datasets: [
+                        {
+                            label: '시스템 메모리',
+                            data: generateRandomData(24, 10, 17),
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'UBA 프로세스',
+                            data: generateRandomData(24, 4, 8),
+                            borderColor: 'rgba(5, 150, 105, 1)',
+                            backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: getChartOptions('메모리 사용량 (GB)', 32)
+            });
+            
+            // 디스크 I/O 차트
+            const diskIOCtx = document.getElementById('diskIOChart').getContext('2d');
+            const diskIOChart = new Chart(diskIOCtx, {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(24),
+                    datasets: [
+                        {
+                            label: '읽기',
+                            data: generateRandomData(24, 2, 25),
+                            borderColor: 'rgba(245, 158, 11, 1)',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '쓰기',
+                            data: generateRandomData(24, 1, 18),
+                            borderColor: 'rgba(217, 119, 6, 1)',
+                            backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: getChartOptions('디스크 I/O (MB/s)', 50)
+            });
+            
+            // 네트워크 차트
+            const networkCtx = document.getElementById('networkChart').getContext('2d');
+            const networkChart = new Chart(networkCtx, {
+                type: 'line',
+                data: {
+                    labels: generateTimeLabels(24),
+                    datasets: [
+                        {
+                            label: '인바운드',
+                            data: generateRandomData(24, 20, 180),
+                            borderColor: 'rgba(14, 165, 233, 1)',
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: '아웃바운드',
+                            data: generateRandomData(24, 15, 220),
+                            borderColor: 'rgba(2, 132, 199, 1)',
+                            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: getChartOptions('네트워크 트래픽 (Mbps)', 500)
+            });
+            
+            // 차트 객체 저장
+            window.charts = {
+                cpu: cpuChart,
+                memory: memoryChart,
+                diskIO: diskIOChart,
+                network: networkChart
+            };
+        }
+        
+        // 차트 옵션 생성
+        function getChartOptions(labelText, suggestedMax) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 12
+                            },
+                            color: '#94a3b8'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#e2e8f0',
+                        bodyColor: '#e2e8f0',
+                        borderColor: 'rgba(51, 65, 85, 0.3)',
+                        borderWidth: 1,
+                        displayColors: true,
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: 'rgba(51, 65, 85, 0.1)',
+                            borderColor: 'rgba(51, 65, 85, 0.3)',
+                            tickColor: 'rgba(51, 65, 85, 0.3)'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: {
+                                size: 10
+                            },
+                            maxRotation: 0
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(51, 65, 85, 0.1)',
+                            borderColor: 'rgba(51, 65, 85, 0.3)',
+                            tickColor: 'rgba(51, 65, 85, 0.3)'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: {
+                                size: 10
+                            }
+                        },
+                        suggestedMax: suggestedMax
+                    }
+                },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                }
+            };
+        }
+        
+        // 시간 레이블 생성 (n시간 간격)
+        function generateTimeLabels(hours) {
+            const labels = [];
+            const now = new Date();
+            
+            for (let i = hours - 1; i >= 0; i--) {
+                const time = new Date(now);
+                time.setHours(now.getHours() - i);
+                labels.push(time.toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }));
+            }
+            
+            return labels;
+        }
+        
+        // 랜덤 데이터 생성
+        function generateRandomData(count, min, max) {
+            return Array.from({ length: count }, () => {
+                return Math.round((Math.random() * (max - min) + min) * 10) / 10;
+            });
+        }
+        
+        // 차트 업데이트
+        function updateCharts(timeRange) {
+            let hours = 24;
+            
+            switch(timeRange) {
+                case '1h': hours = 1; break;
+                case '6h': hours = 6; break;
+                case '24h': hours = 24; break;
+                case '7d': hours = 168; break;
+                case '30d': hours = 720; break;
+            }
+            
+            const timeLabels = generateTimeLabels(hours);
+            
+            // CPU 차트 업데이트
+            window.charts.cpu.data.labels = timeLabels;
+            window.charts.cpu.data.datasets[0].data = generateRandomData(hours, 20, 70);
+            window.charts.cpu.data.datasets[1].data = generateRandomData(hours, 10, 50);
+            window.charts.cpu.update();
+            
+            // 메모리 차트 업데이트
+            window.charts.memory.data.labels = timeLabels;
+            window.charts.memory.data.datasets[0].data = generateRandomData(hours, 10, 17);
+            window.charts.memory.data.datasets[1].data = generateRandomData(hours, 4, 8);
+            window.charts.memory.update();
+            
+            // 디스크 I/O 차트 업데이트
+            window.charts.diskIO.data.labels = timeLabels;
+            window.charts.diskIO.data.datasets[0].data = generateRandomData(hours, 2, 25);
+            window.charts.diskIO.data.datasets[1].data = generateRandomData(hours, 1, 18);
+            window.charts.diskIO.update();
+            
+            // 네트워크 차트 업데이트
+            window.charts.network.data.labels = timeLabels;
+            window.charts.network.data.datasets[0].data = generateRandomData(hours, 20, 180);
+            window.charts.network.data.datasets[1].data = generateRandomData(hours, 15, 220);
+            window.charts.network.update();
+            
+            alert(`차트가 ${timeRange} 데이터로 업데이트되었습니다.`);
+        }
+        
+        // 로그 필터링
+        function filterLogs(level) {
+            const logEntries = document.querySelectorAll('.log-entry');
+            
+            logEntries.forEach(entry => {
+                if (level === 'all') {
+                    entry.style.display = 'flex';
+                } else {
+                    // 해당 로그 레벨만 표시
+                    const logLevel = entry.querySelector('.log-level').textContent.toLowerCase();
+                    
+                    if (level === 'error' && logLevel === 'error') {
+                        entry.style.display = 'flex';
+                    } else if (level === 'warning' && (logLevel === 'warn' || logLevel === 'warning')) {
+                        entry.style.display = 'flex';
+                    } else if (level === 'info' && logLevel === 'info') {
+                        entry.style.display = 'flex';
+                    } else {
+                        entry.style.display = 'none';
+                    }
+                }
+            });
+            
+            alert(`로그 레벨이 '${level}'로 필터링되었습니다.`);
+        }
+        
+        // 로그 새로고침
+        function refreshLogs() {
+            alert('로그 데이터를 새로고침합니다.');
+            // 실제 구현에서는 API를 호출하여 최신 로그 가져오기
+        }
+
+        // 큐 차트 초기화
+        function initQueueChart() {
+            const queueCtx = document.getElementById('queueChart').getContext('2d');
+            const queueChart = new Chart(queueCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'],
+                    datasets: [
+                        {
+                            label: '분석 큐',
+                            data: [5, 8, 12, 18, 15, 22, 24, 15],
+                            backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: '로그 수집 큐',
+                            data: [3, 5, 8, 10, 6, 9, 12, 6],
+                            backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: '알림 큐',
+                            data: [1, 2, 4, 5, 3, 4, 6, 3],
+                            backgroundColor: 'rgba(245, 158, 11, 0.6)',
+                            borderColor: 'rgba(245, 158, 11, 1)',
+                            borderWidth: 1,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 12
+                                },
+                                color: '#94a3b8'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(51, 65, 85, 0.3)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.1)',
+                                borderColor: 'rgba(51, 65, 85, 0.3)',
+                                tickColor: 'rgba(51, 65, 85, 0.3)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.1)',
+                                borderColor: 'rgba(51, 65, 85, 0.3)',
+                                tickColor: 'rgba(51, 65, 85, 0.3)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 프로세스 새로고침
+        function refreshProcesses() {
+            alert('프로세스 정보를 새로고침합니다.');
+            // 실제 구현에서는 API를 호출하여 최신 프로세스 정보 가져오기
+        }
+    </script>
+</body>
+</html> 

@@ -478,6 +478,134 @@
             position: relative;
             z-index: 1;
         }
+
+        /* 뷰 타입 토글 스타일 추가 */
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-left: 1rem;
+        }
+
+        .view-toggle-btn {
+            background: rgba(51, 65, 85, 0.7);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            color: #94a3b8;
+            border-radius: 0.375rem;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .view-toggle-btn:hover {
+            background: rgba(51, 65, 85, 0.9);
+            color: #e2e8f0;
+        }
+
+        .view-toggle-btn.active {
+            background: rgba(99, 102, 241, 0.3);
+            border-color: rgba(99, 102, 241, 0.5);
+            color: #e2e8f0;
+        }
+
+        /* 카드 뷰 스타일 (기존) */
+        .profile-grid.card-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* 리스트 뷰 스타일 */
+        .profile-grid.list-view {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .list-item {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+
+        .list-item:hover {
+            transform: translateX(5px);
+            border-color: rgba(99, 102, 241, 0.3);
+            background: rgba(30, 41, 59, 0.9);
+        }
+
+        .list-item-content {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .list-item-info {
+            margin-left: 1rem;
+        }
+
+        .list-item-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .list-item-description {
+            display: flex;
+            gap: 2rem;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .list-item-description span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .list-item-meta {
+            color: #64748b;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .list-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .list-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .list-item-content {
+                margin-bottom: 1rem;
+            }
+            
+            .list-item-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            
+            .list-item-description {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -515,9 +643,30 @@
                     <option value="custom">사용자 정의</option>
                 </select>
             </div>
+            <!-- 뷰 타입 토글 추가 -->
+            <div class="view-toggle">
+                <button id="cardViewBtn" class="view-toggle-btn active" title="카드 보기">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                    </svg>
+                </button>
+                <button id="listViewBtn" class="view-toggle-btn" title="리스트 보기">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"></line>
+                        <line x1="8" y1="12" x2="21" y2="12"></line>
+                        <line x1="8" y1="18" x2="21" y2="18"></line>
+                        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <div id="profileGrid" class="profile-grid">
+        <div id="profileGrid" class="profile-grid card-view">
             <!-- 프로파일 카드가 여기에 동적으로 추가됩니다 -->
         </div>
 
@@ -577,6 +726,9 @@
     </div>
 
     <script>
+        // 뷰 타입 상태 관리 (기본값: card)
+        let currentViewType = localStorage.getItem('ubaProfileViewType') || 'card';
+        
         // 로컬 스토리지에서 프로파일 목록 가져오기
         function getProfiles() {
             const profiles = localStorage.getItem('ubaProfiles');
@@ -620,7 +772,19 @@
                 return;
             }
             
-            profileGrid.innerHTML = filteredProfiles.map(profile => {
+            // 뷰 타입에 따라 다른 렌더링 함수 호출
+            if (currentViewType === 'card') {
+                renderCardView(filteredProfiles, profileGrid);
+            } else {
+                renderListView(filteredProfiles, profileGrid);
+            }
+        }
+        
+        // 카드 뷰 렌더링
+        function renderCardView(profiles, container) {
+            container.className = 'profile-grid card-view';
+            
+            container.innerHTML = profiles.map(profile => {
                 // 프로파일 유형 표시 텍스트 변환
                 let profileTypeText;
                 switch (profile.profileType) {
@@ -678,6 +842,9 @@
                                 <button class="action-btn delete" onclick="showDeleteModal('${profile.id}', '${profile.name}')">
                                     🗑️
                                 </button>
+                                <button class="action-btn results" onclick="viewProfileResults('${profile.id}')" title="분석 결과 보기">
+                                    📊
+                                </button>
                             </div>
                         </div>
                         
@@ -710,9 +877,88 @@
                 `;
             }).join('');
         }
+        
+        // 리스트 뷰 렌더링
+        function renderListView(profiles, container) {
+            container.className = 'profile-grid list-view';
+            
+            container.innerHTML = profiles.map(profile => {
+                // 프로파일 유형 표시 텍스트 변환
+                let profileTypeText;
+                switch (profile.profileType) {
+                    case 'user': profileTypeText = '사용자'; break;
+                    case 'entity': profileTypeText = '엔터티'; break;
+                    case 'hybrid': profileTypeText = '하이브리드'; break;
+                    default: profileTypeText = '사용자 정의';
+                }
+                
+                // 로그 소스 정보
+                const logSourceName = profile.logSourceName || '-';
+                
+                // 메트릭 개수
+                const metricCount = profile.selectedMetrics ? profile.selectedMetrics.length : 0;
+                
+                // 생성일 표시 (ISO 형식 날짜를 한국 형식으로 변환)
+                const createdDate = profile.createdAt 
+                    ? new Date(profile.createdAt).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'numeric',
+                        day: 'numeric'
+                    })
+                    : '-';
+                
+                return `
+                    <div class="list-item" data-id="${profile.id}">
+                        <div class="list-item-content">
+                            <div class="list-item-info">
+                                <div class="list-item-title">
+                                    ${profile.name}
+                                    <span class="profile-type">${profileTypeText}</span>
+                                </div>
+                                <div class="list-item-description">
+                                    <span>📊 ${logSourceName}</span>
+                                    <span>📈 메트릭 ${metricCount}개</span>
+                                    <span>⏱️ 학습기간 ${profile.learningPeriod || '-'}일</span>
+                                </div>
+                                <div class="list-item-meta">생성일: ${createdDate}</div>
+                            </div>
+                        </div>
+                        <div class="list-item-actions">
+                            <button class="action-btn view" onclick="viewProfileDetails('${profile.id}')">
+                                👁️
+                            </button>
+                            <button class="action-btn edit" onclick="editProfile('${profile.id}')">
+                                ✏️
+                            </button>
+                            <button class="action-btn delete" onclick="showDeleteModal('${profile.id}', '${profile.name}')">
+                                🗑️
+                            </button>
+                            <button class="action-btn results" onclick="viewProfileResults('${profile.id}')" title="분석 결과 보기">
+                                📊
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
 
         // 필터링 함수
         function filterProfiles() {
+            renderProfiles();
+        }
+
+        // 뷰 타입 변경 함수
+        function changeViewType(type) {
+            currentViewType = type;
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem('ubaProfileViewType', type);
+            
+            // 버튼 활성화 상태 변경
+            document.getElementById('cardViewBtn').classList.toggle('active', type === 'card');
+            document.getElementById('listViewBtn').classList.toggle('active', type === 'list');
+            
+            // 프로필 다시 렌더링
             renderProfiles();
         }
 
@@ -819,6 +1065,12 @@
                 </div>
             `;
             
+            const footerDiv = modal.querySelector('.modal-footer');
+            footerDiv.innerHTML = `
+                <button class="btn btn-secondary" onclick="closeDetailsModal()">닫기</button>
+                <button class="btn btn-primary" onclick="viewProfileResults('${profile.id}')">분석 결과 보기</button>
+            `;
+            
             modal.classList.add('active');
         }
 
@@ -908,7 +1160,8 @@
 
         // 페이지 로드 시 프로파일 목록 렌더링
         document.addEventListener('DOMContentLoaded', () => {
-            renderProfiles();
+            // 저장된 뷰 타입 적용
+            changeViewType(currentViewType);
             
             // 새 프로필 생성 버튼 이벤트 변경
             const newProfileBtn = document.getElementById('newProfileBtn');
@@ -916,7 +1169,20 @@
                 e.preventDefault();
                 openWizardModal();
             };
+            
+            // 뷰 타입 토글 버튼 이벤트
+            document.getElementById('cardViewBtn').addEventListener('click', () => changeViewType('card'));
+            document.getElementById('listViewBtn').addEventListener('click', () => changeViewType('list'));
         });
+
+        // 프로필 분석 결과 보기 기능 추가
+        function viewProfileResults(profileId) {
+            // 상세정보 모달이 열려있으면 닫기
+            closeDetailsModal();
+            
+            // 분석 결과 페이지로 이동
+            window.location.href = `uba_profile_results.html?id=${profileId}`;
+        }
     </script>
 </body>
 </html> 

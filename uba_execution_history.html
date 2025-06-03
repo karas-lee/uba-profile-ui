@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UBA 프로파일 실행 이력</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-title p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .profile-header {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .profile-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .meta-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .meta-value {
+            font-size: 1.1rem;
+            color: #e2e8f0;
+        }
+
+        .profile-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: #e2e8f0;
+        }
+
+        .nav-item.active {
+            color: #6366f1;
+            border-bottom: 2px solid #6366f1;
+        }
+
+        .dashboard-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5856eb, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(51, 65, 85, 0.7);
+            color: #e2e8f0;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(51, 65, 85, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* 실행 이력 스타일 */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+
+        .history-table th {
+            text-align: left;
+            padding: 1rem;
+            color: #94a3b8;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .history-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .history-table tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        .history-table tbody tr:hover {
+            background: rgba(51, 65, 85, 0.2);
+        }
+
+        .history-table tbody tr.selected {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid #6366f1;
+        }
+
+        .run-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .run-status.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+        }
+
+        .run-status.failed {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .run-status.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .run-status.running {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+        }
+
+        .action-btn {
+            background: rgba(51, 65, 85, 0.5);
+            border: none;
+            border-radius: 0.375rem;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+
+        .action-btn:hover {
+            background: rgba(51, 65, 85, 0.8);
+            color: #e2e8f0;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* 비교 선택 스타일 */
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .comparison-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .comparison-selector {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .comparison-item {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            flex: 1;
+        }
+
+        .comparison-item h4 {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .comparison-item select {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            padding: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        /* 차트 스타일 */
+        .chart-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .chart-title {
+            font-size: 1.1rem;
+            color: #f1f5f9;
+            font-weight: 500;
+        }
+
+        .chart-legend {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .legend-color {
+            width: 1rem;
+            height: 1rem;
+            border-radius: 50%;
+        }
+
+        .chart-placeholder {
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #64748b;
+            background: rgba(15, 23, 42, 0.3);
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            border: 1px dashed rgba(51, 65, 85, 0.5);
+        }
+
+        .comparison-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .metric-box {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+
+        .metric-box h5 {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: normal;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value-group {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-value-label {
+            color: #94a3b8;
+        }
+
+        .metric-value {
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+
+        .metric-diff {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(51, 65, 85, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .diff-increase {
+            color: #ef4444;
+        }
+
+        .diff-decrease {
+            color: #10b981;
+        }
+
+        .diff-neutral {
+            color: #94a3b8;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-selector {
+                flex-direction: column;
+            }
+            .history-table {
+                display: block;
+                overflow-x: auto;
+            }
+            .profile-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="header-title">
+                <h1>UBA 프로파일 실행 이력</h1>
+                <p>과거 실행 결과를 확인하고 비교하세요</p>
+            </div>
+            <button class="btn btn-secondary" onclick="goBackToList()">
+                ← 목록으로 돌아가기
+            </button>
+        </div>
+
+        <div class="profile-header">
+            <div class="profile-info">
+                <h2 class="profile-name" id="profileName">UBA 프로파일 이름</h2>
+                <div class="profile-meta">
+                    <div class="profile-meta-item">
+                        <div class="meta-label">프로파일 유형</div>
+                        <div class="meta-value" id="profileType">사용자 프로파일</div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <div class="meta-label">로그 소스</div>
+                        <div class="meta-value" id="logSource">Windows 이벤트 로그</div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <div class="meta-label">생성일</div>
+                        <div class="meta-value" id="creationDate">2025-04-15</div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <div class="meta-label">총 실행 횟수</div>
+                        <div class="meta-value" id="executionCount">27회</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-nav">
+            <a href="uba_profile_results.html" class="nav-item">분석 결과</a>
+            <a href="uba_profile_management.html" class="nav-item">실행 관리</a>
+            <a href="uba_execution_history.html" class="nav-item active">실행 이력</a>
+            <a href="uba_system_health.html" class="nav-item">시스템 상태</a>
+        </div>
+
+        <!-- 실행 이력 테이블 -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">실행 이력</h3>
+                <div>
+                    <button class="btn btn-secondary" onclick="refreshHistory()">새로고침</button>
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>실행 ID</th>
+                            <th>시작 시간</th>
+                            <th>종료 시간</th>
+                            <th>소요 시간</th>
+                            <th>상태</th>
+                            <th>이상 탐지</th>
+                            <th>위험 점수</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <tr>
+                            <td>EXEC-001</td>
+                            <td>2025-06-01 00:00</td>
+                            <td>2025-06-01 00:32</td>
+                            <td>32분</td>
+                            <td><span class="run-status success">성공</span></td>
+                            <td>3개</td>
+                            <td>65</td>
+                            <td>
+                                <div class="action-group">
+                                    <button class="action-btn" title="결과 보기">👁️</button>
+                                    <button class="action-btn" title="비교 선택">📊</button>
+                                    <button class="action-btn" title="로그 보기">📄</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>EXEC-002</td>
+                            <td>2025-05-31 00:00</td>
+                            <td>2025-05-31 00:28</td>
+                            <td>28분</td>
+                            <td><span class="run-status success">성공</span></td>
+                            <td>2개</td>
+                            <td>45</td>
+                            <td>
+                                <div class="action-group">
+                                    <button class="action-btn" title="결과 보기">👁️</button>
+                                    <button class="action-btn" title="비교 선택">📊</button>
+                                    <button class="action-btn" title="로그 보기">📄</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>EXEC-003</td>
+                            <td>2025-05-30 00:00</td>
+                            <td>2025-05-30 00:35</td>
+                            <td>35분</td>
+                            <td><span class="run-status warning">경고</span></td>
+                            <td>4개</td>
+                            <td>72</td>
+                            <td>
+                                <div class="action-group">
+                                    <button class="action-btn" title="결과 보기">👁️</button>
+                                    <button class="action-btn" title="비교 선택">📊</button>
+                                    <button class="action-btn" title="로그 보기">📄</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>EXEC-004</td>
+                            <td>2025-05-29 00:00</td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td><span class="run-status failed">실패</span></td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>
+                                <div class="action-group">
+                                    <button class="action-btn" title="로그 보기">📄</button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>EXEC-005</td>
+                            <td>2025-05-28 00:00</td>
+                            <td>2025-05-28 00:31</td>
+                            <td>31분</td>
+                            <td><span class="run-status success">성공</span></td>
+                            <td>1개</td>
+                            <td>32</td>
+                            <td>
+                                <div class="action-group">
+                                    <button class="action-btn" title="결과 보기">👁️</button>
+                                    <button class="action-btn" title="비교 선택">📊</button>
+                                    <button class="action-btn" title="로그 보기">📄</button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 실행 결과 비교 -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">실행 결과 비교</h3>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div class="comparison-header">
+                    <div class="comparison-title">비교할 실행을 선택하세요</div>
+                </div>
+                <div class="comparison-selector">
+                    <div class="comparison-item">
+                        <h4>기준 실행</h4>
+                        <select id="baselineExecution">
+                            <option>EXEC-001 (2025-06-01)</option>
+                            <option>EXEC-002 (2025-05-31)</option>
+                            <option>EXEC-003 (2025-05-30)</option>
+                            <option>EXEC-005 (2025-05-28)</option>
+                        </select>
+                    </div>
+                    <div class="comparison-item">
+                        <h4>비교 실행</h4>
+                        <select id="comparisonExecution">
+                            <option>EXEC-002 (2025-05-31)</option>
+                            <option>EXEC-003 (2025-05-30)</option>
+                            <option>EXEC-005 (2025-05-28)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 위험 점수 추이 차트 -->
+                <div class="chart-container">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div class="chart-title">위험 점수 비교</div>
+                            <div class="chart-legend">
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #6366f1;"></div>
+                                    <div>기준 실행 (EXEC-001)</div>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background: #f59e0b;"></div>
+                                    <div>비교 실행 (EXEC-002)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-placeholder">
+                            이 영역에 위험 점수 비교 차트가 표시됩니다
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div class="chart-title">이상 탐지 유형 비교</div>
+                        </div>
+                        <div class="chart-placeholder">
+                            이 영역에 이상 탐지 유형 비교 차트가 표시됩니다
+                        </div>
+                    </div>
+
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <div class="chart-title">주요 메트릭 비교</div>
+                        </div>
+                        <div class="comparison-metrics">
+                            <div class="metric-box">
+                                <h5>로그인 시간 패턴 이상</h5>
+                                <div class="metric-value-group">
+                                    <div class="metric-value-label">기준:</div>
+                                    <div class="metric-value">3회</div>
+                                </div>
+                                <div class="metric-value-group">
+                                    <div class="metric-value-label">비교:</div>
+                                    <div class="metric-value">5회</div>
+                                </div>
+                                <div class="metric-diff diff-increase">
+                                    +66.7% 증가
+                                </div>
+                            </div>
+                            <div class="metric-box">
+                                <h5>IP 주소 패턴 이상</h5>
+                                <div class="metric-value-group">
+                                    <div class="metric-value-label">기준:</div>
+                                    <div class="metric-value">8회</div>
+                                </div>
+                                <div class="metric-value-group">
+                                    <div class="metric-value-label">비교:</div>
+                                    <div class="metric-value">4회</div>
+                                </div>
+                                <div class="metric-diff diff-decrease">
+                                    -50.0% 감소
+                                </div>
+                            </div>
+                            <div class="metric-box">
+                                <h5>총 처리 로그 수</h5>
+                                <div class="metric-value-group">
+                                    <div class="metric-value-label">기준:</div>
+                                    <div class="metric-value">128,532개</div>
+                                </div>
+                                <div class="metric-value-group">
+                                    <div class="metric-value-label">비교:</div>
+                                    <div class="metric-value">130,845개</div>
+                                </div>
+                                <div class="metric-diff diff-neutral">
+                                    +1.8% 변화
+                                </div>
+                            </div>
+                            <div class="metric-box">
+                                <h5>권한 상승 시도</h5>
+                                <div class="metric-value-group">
+                                    <div class="metric-value-label">기준:</div>
+                                    <div class="metric-value">0회</div>
+                                </div>
+                                <div class="metric-value-group">
+                                    <div class="metric-value-label">비교:</div>
+                                    <div class="metric-value">2회</div>
+                                </div>
+                                <div class="metric-diff diff-increase">
+                                    +2회 증가 (신규)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn btn-secondary" onclick="goBackToList()">목록으로 돌아가기</button>
+            <button class="btn btn-primary" onclick="exportComparisonReport()">비교 보고서 내보내기</button>
+        </div>
+    </div>
+
+    <script>
+        let profileData = null;
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            // URL에서 프로필 ID 가져오기
+            const urlParams = new URLSearchParams(window.location.search);
+            const profileId = urlParams.get('id');
+            
+            if (profileId) {
+                loadProfileHistory(profileId);
+            } else {
+                alert('프로필 정보를 찾을 수 없습니다.');
+                goBackToList();
+            }
+
+            // 테이블 행 클릭 이벤트 설정
+            setupTableRowEvents();
+        });
+        
+        // 프로필 정보 로드
+        function loadProfileHistory(profileId) {
+            // 로컬 스토리지에서 프로필 기본 정보 가져오기
+            const profiles = localStorage.getItem('ubaProfiles');
+            if (!profiles) {
+                alert('프로필 정보를 찾을 수 없습니다.');
+                goBackToList();
+                return;
+            }
+            
+            const profileList = JSON.parse(profiles);
+            profileData = profileList.find(p => p.id === profileId);
+            
+            if (!profileData) {
+                alert('해당 프로필을 찾을 수 없습니다.');
+                goBackToList();
+                return;
+            }
+            
+            // 프로필 정보 표시
+            displayProfileInfo(profileData);
+            
+            // 실행 이력 데이터는 실제로는 API에서 가져와야 함
+            // 여기서는 모의 데이터로 표시
+        }
+        
+        // 프로필 기본 정보 표시
+        function displayProfileInfo(profile) {
+            document.getElementById('profileName').textContent = profile.name;
+            
+            // 프로파일 유형
+            let profileTypeText;
+            switch (profile.profileType) {
+                case 'user': profileTypeText = '사용자'; break;
+                case 'entity': profileTypeText = '엔터티'; break;
+                case 'hybrid': profileTypeText = '하이브리드'; break;
+                default: profileTypeText = '사용자 정의';
+            }
+            document.getElementById('profileType').textContent = profileTypeText + ' 프로파일';
+            
+            // 로그 소스
+            document.getElementById('logSource').textContent = profile.logSourceName || '-';
+            
+            // 생성일
+            if (profile.createdAt) {
+                const createdDate = new Date(profile.createdAt);
+                document.getElementById('creationDate').textContent = formatDate(createdDate);
+            } else {
+                document.getElementById('creationDate').textContent = '-';
+            }
+            
+            // 여기에서는 모의 실행 횟수 표시
+            document.getElementById('executionCount').textContent = '27회';
+        }
+        
+        // 날짜 포맷팅 함수
+        function formatDate(date) {
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).replace(/\. /g, '-').replace('.', '');
+        }
+        
+        // 목록으로 돌아가기
+        function goBackToList() {
+            window.location.href = 'index.html';
+        }
+        
+        // 테이블 행 이벤트 설정
+        function setupTableRowEvents() {
+            const rows = document.querySelectorAll('#historyTableBody tr');
+            
+            rows.forEach(row => {
+                row.addEventListener('click', function(e) {
+                    // 액션 버튼 클릭은 이벤트 버블링 방지
+                    if (e.target.closest('.action-btn')) {
+                        return;
+                    }
+                    
+                    // 선택된 행 스타일 설정
+                    rows.forEach(r => r.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            
+            // 액션 버튼 이벤트 설정
+            const viewButtons = document.querySelectorAll('.action-btn[title="결과 보기"]');
+            viewButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const executionId = this.closest('tr').cells[0].textContent;
+                    viewExecutionResults(executionId);
+                });
+            });
+            
+            const compareButtons = document.querySelectorAll('.action-btn[title="비교 선택"]');
+            compareButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const executionId = this.closest('tr').cells[0].textContent;
+                    selectForComparison(executionId);
+                });
+            });
+            
+            const logButtons = document.querySelectorAll('.action-btn[title="로그 보기"]');
+            logButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const executionId = this.closest('tr').cells[0].textContent;
+                    viewExecutionLogs(executionId);
+                });
+            });
+        }
+        
+        // 실행 결과 보기
+        function viewExecutionResults(executionId) {
+            alert(`실행 ID: ${executionId}의 상세 결과를 조회합니다.`);
+            // 실제로는 여기서 결과 페이지로 이동하거나 모달 창을 표시
+        }
+        
+        // 비교 선택
+        function selectForComparison(executionId) {
+            // 여기에서는 비교 선택 드롭다운에 값 설정
+            const comparisonSelect = document.getElementById('comparisonExecution');
+            comparisonSelect.value = `${executionId} (날짜)`; // 실제로는 날짜 정보도 포함
+            
+            alert(`실행 ID: ${executionId}을(를) 비교 실행으로 선택했습니다.`);
+        }
+        
+        // 실행 로그 보기
+        function viewExecutionLogs(executionId) {
+            alert(`실행 ID: ${executionId}의 로그를 조회합니다.`);
+            // 실제로는 여기서 로그 페이지로 이동하거나 모달 창을 표시
+        }
+        
+        // 이력 새로고침
+        function refreshHistory() {
+            alert('실행 이력을 새로고침합니다.');
+            // 실제로는 여기서 API 호출을 통해 최신 이력 데이터를 가져옴
+        }
+        
+        // 비교 보고서 내보내기
+        function exportComparisonReport() {
+            const baselineExec = document.getElementById('baselineExecution').value;
+            const comparisonExec = document.getElementById('comparisonExecution').value;
+            
+            if (baselineExec === comparisonExec) {
+                alert('서로 다른 두 실행을 선택해주세요.');
+                return;
+            }
+            
+            alert(`${baselineExec}와(과) ${comparisonExec} 사이의 비교 보고서를 생성합니다.`);
+            // 실제로는 여기서 API 호출을 통해 보고서 생성 후 다운로드
+        }
+    </script>
+</body>
+</html> 

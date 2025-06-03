@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UBA 프로파일 실행 관리</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .header-title h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-title p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .profile-header {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+
+        .profile-meta {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .profile-meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .meta-label {
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .meta-value {
+            font-size: 1.1rem;
+            color: #e2e8f0;
+        }
+
+        .profile-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .nav-item {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-item:hover {
+            color: #e2e8f0;
+        }
+
+        .nav-item.active {
+            color: #6366f1;
+            border-bottom: 2px solid #6366f1;
+        }
+
+        .dashboard-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5856eb, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(51, 65, 85, 0.7);
+            color: #e2e8f0;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(51, 65, 85, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.7);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* 실행 관리 스타일 */
+        .status-indicator {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 1rem;
+            width: fit-content;
+        }
+
+        .status-badge::before {
+            content: '';
+            display: block;
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+        }
+
+        .status-badge.active {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-badge.active::before {
+            background: #10b981;
+        }
+
+        .status-badge.paused {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .status-badge.paused::before {
+            background: #f59e0b;
+        }
+
+        .status-badge.stopped {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .status-badge.stopped::before {
+            background: #ef4444;
+        }
+
+        .last-run, .next-run {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+
+        .control-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .schedule-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .schedule-option {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+
+        .schedule-option label {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: #e2e8f0;
+            cursor: pointer;
+        }
+
+        .schedule-option input[type="radio"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            accent-color: #6366f1;
+        }
+
+        .schedule-option input[type="time"],
+        .schedule-option select {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* 베이스라인 관리 스타일 */
+        .baseline-options {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .baseline-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .baseline-option label {
+            min-width: 200px;
+            color: #94a3b8;
+        }
+
+        .baseline-option select {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            padding: 0.5rem 1rem;
+            font-size: 0.95rem;
+            flex: 1;
+        }
+
+        .baseline-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .baseline-quality {
+            margin-top: 1.5rem;
+        }
+
+        .quality-metric {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .quality-metric span:first-child {
+            min-width: 150px;
+            color: #94a3b8;
+        }
+
+        .quality-metric span:last-child {
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 0.5rem;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            border-radius: 9999px;
+        }
+
+        .progress.warning {
+            background: linear-gradient(90deg, #f59e0b, #fbbf24);
+        }
+
+        .progress.danger {
+            background: linear-gradient(90deg, #ef4444, #f87171);
+        }
+
+        /* 알림 설정 스타일 */
+        .alert-settings {
+            padding: 1rem 0;
+        }
+
+        .alert-settings h4 {
+            margin-bottom: 1rem;
+            color: #f1f5f9;
+            font-size: 1.1rem;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 0.5rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 1.25rem;
+            height: 1.25rem;
+            accent-color: #6366f1;
+            margin-right: 0.75rem;
+        }
+
+        .checkbox-item label {
+            color: #e2e8f0;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .control-buttons {
+                flex-direction: column;
+            }
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+            .profile-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="header">
+            <div class="header-title">
+                <h1>UBA 프로파일 실행 관리</h1>
+                <p>프로파일 실행 주기 및 동작을 설정하세요</p>
+            </div>
+            <button class="btn btn-secondary" onclick="goBackToList()">
+                ← 목록으로 돌아가기
+            </button>
+        </div>
+
+        <div class="profile-header">
+            <div class="profile-info">
+                <h2 class="profile-name" id="profileName">UBA 프로파일 이름</h2>
+                <div class="profile-meta">
+                    <div class="profile-meta-item">
+                        <div class="meta-label">프로파일 유형</div>
+                        <div class="meta-value" id="profileType">사용자 프로파일</div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <div class="meta-label">로그 소스</div>
+                        <div class="meta-value" id="logSource">Windows 이벤트 로그</div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <div class="meta-label">생성일</div>
+                        <div class="meta-value" id="creationDate">2025-04-15</div>
+                    </div>
+                    <div class="profile-meta-item">
+                        <div class="meta-label">최근 수정일</div>
+                        <div class="meta-value" id="modifiedDate">2025-06-01</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="profile-nav">
+            <a href="uba_profile_results.html" class="nav-item">분석 결과</a>
+            <a href="uba_profile_management.html" class="nav-item active">실행 관리</a>
+            <a href="uba_execution_history.html" class="nav-item">실행 이력</a>
+            <a href="uba_system_health.html" class="nav-item">시스템 상태</a>
+        </div>
+
+        <!-- 프로파일 실행 관리 카드 -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">프로파일 실행 관리</h3>
+            </div>
+            <div style="padding: 1.5rem;">
+                <!-- 실행 상태 표시 -->
+                <div class="status-indicator">
+                    <div class="status-badge active">실행 중</div>
+                    <div class="last-run">마지막 실행: 2025-06-01 15:30</div>
+                    <div class="next-run">다음 예정 실행: 2025-06-02 00:00</div>
+                </div>
+                
+                <!-- 실행 제어 버튼 -->
+                <div class="control-buttons">
+                    <button class="btn btn-primary" onclick="runAnalysisNow()">지금 분석 실행</button>
+                    <button class="btn btn-secondary" onclick="pauseAnalysis()">일시 중지</button>
+                    <button class="btn btn-danger" onclick="stopAnalysis()">분석 중지</button>
+                </div>
+                
+                <!-- 실행 일정 설정 -->
+                <h4 style="margin: 1.5rem 0 1rem 0; color: #f1f5f9; font-size: 1.1rem;">실행 일정</h4>
+                <div class="schedule-options">
+                    <div class="schedule-option">
+                        <input type="radio" id="schedule-daily" name="schedule" checked>
+                        <label for="schedule-daily">매일 <input type="time" value="00:00"></label>
+                    </div>
+                    <div class="schedule-option">
+                        <input type="radio" id="schedule-weekly" name="schedule">
+                        <label for="schedule-weekly">매주 
+                            <select>
+                                <option>월요일</option>
+                                <option>화요일</option>
+                                <option>수요일</option>
+                                <option>목요일</option>
+                                <option>금요일</option>
+                                <option>토요일</option>
+                                <option>일요일</option>
+                            </select>
+                            <input type="time" value="00:00">
+                        </label>
+                    </div>
+                    <div class="schedule-option">
+                        <input type="radio" id="schedule-monthly" name="schedule">
+                        <label for="schedule-monthly">매월 
+                            <select>
+                                <option>1일</option>
+                                <option>2일</option>
+                                <option>3일</option>
+                                <option>4일</option>
+                                <option>5일</option>
+                                <option selected>마지막 일</option>
+                            </select>
+                            <input type="time" value="00:00">
+                        </label>
+                    </div>
+                    <div class="schedule-option">
+                        <input type="radio" id="schedule-custom" name="schedule">
+                        <label for="schedule-custom">사용자 정의 (CRON 표현식)</label>
+                        <input type="text" placeholder="0 0 * * *" style="flex: 1; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(51, 65, 85, 0.5); border-radius: 0.5rem; color: #e2e8f0; padding: 0.5rem; font-size: 0.9rem;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 베이스라인 관리 카드 -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">베이스라인 관리</h3>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div class="baseline-options">
+                    <div class="baseline-option">
+                        <label>베이스라인 재학습 주기:</label>
+                        <select>
+                            <option>자동 (변화 감지시)</option>
+                            <option>주간</option>
+                            <option selected>월간</option>
+                            <option>분기</option>
+                            <option>수동</option>
+                        </select>
+                    </div>
+                    <div class="baseline-option">
+                        <label>학습 데이터 기간:</label>
+                        <select>
+                            <option>최근 7일</option>
+                            <option>최근 14일</option>
+                            <option selected>최근 30일</option>
+                            <option>최근 60일</option>
+                            <option>최근 90일</option>
+                            <option>전체 데이터</option>
+                        </select>
+                    </div>
+                    <div class="baseline-buttons">
+                        <button class="btn btn-secondary" onclick="retrainBaseline()">베이스라인 지금 재학습</button>
+                        <button class="btn btn-danger" onclick="resetBaseline()">베이스라인 리셋</button>
+                    </div>
+                </div>
+                
+                <!-- 베이스라인 품질 모니터링 -->
+                <div class="baseline-quality">
+                    <h4 style="margin-bottom: 1.5rem; color: #f1f5f9; font-size: 1.1rem;">베이스라인 품질</h4>
+                    <div class="quality-metric">
+                        <span>데이터 충분성:</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 85%"></div>
+                        </div>
+                        <span>85%</span>
+                    </div>
+                    <div class="quality-metric">
+                        <span>모델 신뢰도:</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 92%"></div>
+                        </div>
+                        <span>92%</span>
+                    </div>
+                    <div class="quality-metric">
+                        <span>이상치 탐지율:</span>
+                        <div class="progress-bar">
+                            <div class="progress" style="width: 78%"></div>
+                        </div>
+                        <span>78%</span>
+                    </div>
+                    <div class="quality-metric">
+                        <span>학습 데이터 균형:</span>
+                        <div class="progress-bar">
+                            <div class="progress warning" style="width: 65%"></div>
+                        </div>
+                        <span>65%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 알림 설정 카드 -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">알림 설정</h3>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div class="alert-settings">
+                    <h4>알림 트리거</h4>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="alert-anomaly" checked>
+                            <label for="alert-anomaly">이상 징후 탐지시</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="alert-risk-increase" checked>
+                            <label for="alert-risk-increase">위험 점수 증가시</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="alert-baseline-change">
+                            <label for="alert-baseline-change">베이스라인 변경시</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="alert-analysis-complete">
+                            <label for="alert-analysis-complete">분석 완료시</label>
+                        </div>
+                    </div>
+                    
+                    <h4>알림 심각도 임계값</h4>
+                    <div class="baseline-option">
+                        <label>최소 심각도 수준:</label>
+                        <select>
+                            <option>모든 알림</option>
+                            <option>낮음 이상</option>
+                            <option selected>중간 이상</option>
+                            <option>높음만</option>
+                        </select>
+                    </div>
+                    
+                    <h4>알림 채널</h4>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="channel-email" checked>
+                            <label for="channel-email">이메일</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="channel-slack" checked>
+                            <label for="channel-slack">Slack</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="channel-sms">
+                            <label for="channel-sms">SMS</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="channel-webhook">
+                            <label for="channel-webhook">Webhook</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn btn-secondary" onclick="goBackToList()">목록으로 돌아가기</button>
+            <button class="btn btn-primary" onclick="saveSettings()">설정 저장</button>
+        </div>
+    </div>
+
+    <script>
+        let profileData = null;
+        
+        // 페이지 로드 시 실행
+        document.addEventListener('DOMContentLoaded', () => {
+            // URL에서 프로필 ID 가져오기
+            const urlParams = new URLSearchParams(window.location.search);
+            const profileId = urlParams.get('id');
+            
+            if (profileId) {
+                loadProfileManagement(profileId);
+            } else {
+                alert('프로필 정보를 찾을 수 없습니다.');
+                goBackToList();
+            }
+        });
+        
+        // 프로필 정보 로드
+        function loadProfileManagement(profileId) {
+            // 로컬 스토리지에서 프로필 기본 정보 가져오기
+            const profiles = localStorage.getItem('ubaProfiles');
+            if (!profiles) {
+                alert('프로필 정보를 찾을 수 없습니다.');
+                goBackToList();
+                return;
+            }
+            
+            const profileList = JSON.parse(profiles);
+            profileData = profileList.find(p => p.id === profileId);
+            
+            if (!profileData) {
+                alert('해당 프로필을 찾을 수 없습니다.');
+                goBackToList();
+                return;
+            }
+            
+            // 프로필 정보 표시
+            displayProfileInfo(profileData);
+        }
+        
+        // 프로필 기본 정보 표시
+        function displayProfileInfo(profile) {
+            document.getElementById('profileName').textContent = profile.name;
+            
+            // 프로파일 유형
+            let profileTypeText;
+            switch (profile.profileType) {
+                case 'user': profileTypeText = '사용자'; break;
+                case 'entity': profileTypeText = '엔터티'; break;
+                case 'hybrid': profileTypeText = '하이브리드'; break;
+                default: profileTypeText = '사용자 정의';
+            }
+            document.getElementById('profileType').textContent = profileTypeText + ' 프로파일';
+            
+            // 로그 소스
+            document.getElementById('logSource').textContent = profile.logSourceName || '-';
+            
+            // 생성일
+            if (profile.createdAt) {
+                const createdDate = new Date(profile.createdAt);
+                document.getElementById('creationDate').textContent = formatDate(createdDate);
+            } else {
+                document.getElementById('creationDate').textContent = '-';
+            }
+            
+            // 수정일
+            if (profile.updatedAt) {
+                const updatedDate = new Date(profile.updatedAt);
+                document.getElementById('modifiedDate').textContent = formatDate(updatedDate);
+            } else {
+                document.getElementById('modifiedDate').textContent = '-';
+            }
+        }
+        
+        // 날짜 포맷팅 함수
+        function formatDate(date) {
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).replace(/\. /g, '-').replace('.', '');
+        }
+        
+        // 목록으로 돌아가기
+        function goBackToList() {
+            window.location.href = 'index.html';
+        }
+        
+        // 지금 분석 실행
+        function runAnalysisNow() {
+            if (confirm('지금 분석을 실행하시겠습니까? 시스템 리소스에 따라 10-30분이 소요될 수 있습니다.')) {
+                // 여기에 실제 분석 실행 API 호출 코드 추가
+                alert('분석이 시작되었습니다. 결과가 준비되면 알림을 받게 됩니다.');
+            }
+        }
+        
+        // 분석 일시 중지
+        function pauseAnalysis() {
+            if (confirm('분석을 일시 중지하시겠습니까? 일정에 따른 자동 실행이 중지됩니다.')) {
+                // 여기에 실제 일시 중지 API 호출 코드 추가
+                const statusBadge = document.querySelector('.status-badge');
+                statusBadge.classList.remove('active');
+                statusBadge.classList.add('paused');
+                statusBadge.textContent = '일시 중지됨';
+            }
+        }
+        
+        // 분석 중지
+        function stopAnalysis() {
+            if (confirm('분석을 중지하시겠습니까? 모든 진행 중인 분석이 중단됩니다.')) {
+                // 여기에 실제 중지 API 호출 코드 추가
+                const statusBadge = document.querySelector('.status-badge');
+                statusBadge.classList.remove('active');
+                statusBadge.classList.add('stopped');
+                statusBadge.textContent = '중지됨';
+            }
+        }
+        
+        // 베이스라인 재학습
+        function retrainBaseline() {
+            if (confirm('베이스라인을 지금 재학습하시겠습니까? 이 작업은 오래 걸릴 수 있습니다.')) {
+                // 여기에 실제 재학습 API 호출 코드 추가
+                alert('베이스라인 재학습이 시작되었습니다. 완료되면 알림을 받게 됩니다.');
+            }
+        }
+        
+        // 베이스라인 리셋
+        function resetBaseline() {
+            if (confirm('베이스라인을 리셋하시겠습니까? 모든 학습된 데이터가 삭제됩니다.')) {
+                if (confirm('이 작업은 되돌릴 수 없습니다. 정말 리셋하시겠습니까?')) {
+                    // 여기에 실제 리셋 API 호출 코드 추가
+                    alert('베이스라인이 리셋되었습니다. 새로운 데이터를 수집하기 시작합니다.');
+                }
+            }
+        }
+        
+        // 설정 저장
+        function saveSettings() {
+            // 여기에 실제 설정 저장 API 호출 코드 추가
+            alert('설정이 성공적으로 저장되었습니다.');
+        }
+    </script>
+</body>
+</html> 
