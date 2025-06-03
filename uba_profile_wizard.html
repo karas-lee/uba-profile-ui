@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UBA 프로파일 마법사</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .wizard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .progress-bar {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 3rem;
+            gap: 1rem;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .step-circle.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .step-circle.completed {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .step-circle.inactive {
+            background: #374151;
+            color: #9ca3af;
+        }
+
+        .step-label {
+            margin-left: 0.75rem;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .wizard-content {
+            flex: 1;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .step-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 0.5rem;
+            color: #e2e8f0;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .radio-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 1.25rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 2px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .radio-item:hover {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #6366f1;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+        }
+
+        .radio-item.selected {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+            border-color: #6366f1;
+            box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.3);
+        }
+
+        .radio-item input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 1rem;
+            margin-top: 0.25rem;
+            accent-color: #6366f1;
+            cursor: pointer;
+        }
+
+        .radio-item label {
+            cursor: pointer;
+            line-height: 1.4;
+            flex: 1;
+        }
+
+        .radio-item label strong {
+            display: block;
+            color: #f1f5f9;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .radio-description {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-item:hover {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: #6366f1;
+            transform: translateY(-2px);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 0.75rem;
+            accent-color: #6366f1;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.1);
+        }
+
+        .metric-card h4 {
+            color: #6366f1;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .metric-card p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .metric-card.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            background: rgba(15, 23, 42, 0.3);
+            border-color: rgba(51, 65, 85, 0.2);
+        }
+
+        .metric-card.disabled h4 {
+            color: #64748b;
+        }
+
+        .metric-unavailable {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #5856eb, #7c3aed);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(51, 65, 85, 0.7);
+            color: #e2e8f0;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: rgba(51, 65, 85, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .summary-card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+        }
+
+        .summary-card h4 {
+            color: #f1f5f9;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.2);
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .tag {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin: 0.125rem;
+        }
+
+        @media (max-width: 768px) {
+            .wizard-container { padding: 1rem; }
+            .progress-bar { flex-direction: column; align-items: center; gap: 1rem; }
+            .button-group { flex-direction: column; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="wizard-container">
+        <div class="header">
+            <h1>UBA 프로파일 마법사</h1>
+            <p>사용자 및 엔터티 행동 분석 프로파일을 쉽게 설정하세요</p>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-step">
+                <div class="step-circle active" id="step1">1</div>
+                <div class="step-label">기본 정보</div>
+            </div>
+            <div class="progress-step">
+                <div class="step-circle inactive" id="step2">2</div>
+                <div class="step-label">데이터 소스</div>
+            </div>
+            <div class="progress-step">
+                <div class="step-circle inactive" id="step3">3</div>
+                <div class="step-label">분석 메트릭</div>
+            </div>
+            <div class="progress-step">
+                <div class="step-circle inactive" id="step4">4</div>
+                <div class="step-label">임계값 설정</div>
+            </div>
+            <div class="progress-step">
+                <div class="step-circle inactive" id="step5">5</div>
+                <div class="step-label">검토 및 완료</div>
+            </div>
+        </div>
+
+        <div class="wizard-content">
+            <!-- Step 1: 기본 정보 -->
+            <div class="step-content active" id="content1">
+                <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">UBA 프로파일 기본 정보</h3>
+                
+                <div class="form-group">
+                    <label for="profileName">프로파일 이름 *</label>
+                    <input type="text" id="profileName" placeholder="예: 일반 사용자 행동 프로파일">
+                </div>
+
+                <div class="form-group">
+                    <label for="profileDescription">설명</label>
+                    <textarea id="profileDescription" rows="3" placeholder="이 프로파일이 분석하는 행동 패턴에 대한 설명을 입력하세요"></textarea>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="profileType">프로파일 유형</label>
+                        <select id="profileType">
+                            <option value="user">사용자 프로파일</option>
+                            <option value="entity">엔터티 프로파일</option>
+                            <option value="hybrid">하이브리드 프로파일</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="analysisScope">분석 범위</label>
+                        <select id="analysisScope">
+                            <option value="department">부서별</option>
+                            <option value="role">역할별</option>
+                            <option value="global">전체 조직</option>
+                            <option value="custom">사용자 정의</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>정보:</strong> UBA 프로파일은 정상적인 사용자 행동 패턴을 학습하여 이상 징후를 탐지합니다.
+                </div>
+            </div>
+
+            <!-- Step 2: 데이터 소스 -->
+            <div class="step-content" id="content2">
+                <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">데이터 소스 선택</h3>
+                
+                <div class="form-group">
+                    <label>로그 소스 선택 * (하나만 선택)</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="windowsLogs" name="logSource" value="windows">
+                            <label for="windowsLogs">
+                                <strong>Windows 이벤트 로그</strong>
+                                <span class="radio-description">로그인, 로그아웃, 시스템 이벤트</span>
+                            </label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="adLogs" name="logSource" value="ad">
+                            <label for="adLogs">
+                                <strong>Active Directory</strong>
+                                <span class="radio-description">사용자 인증, 권한 변경, 그룹 관리</span>
+                            </label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="firewallLogs" name="logSource" value="firewall">
+                            <label for="firewallLogs">
+                                <strong>방화벽 로그</strong>
+                                <span class="radio-description">네트워크 트래픽, IP 접근 패턴</span>
+                            </label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="proxyLogs" name="logSource" value="proxy">
+                            <label for="proxyLogs">
+                                <strong>프록시/웹 로그</strong>
+                                <span class="radio-description">웹 사이트 접근, URL 패턴</span>
+                            </label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="vpnLogs" name="logSource" value="vpn">
+                            <label for="vpnLogs">
+                                <strong>VPN 로그</strong>
+                                <span class="radio-description">원격 접속, 지역별 연결 패턴</span>
+                            </label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="dnsLogs" name="logSource" value="dns">
+                            <label for="dnsLogs">
+                                <strong>DNS 로그</strong>
+                                <span class="radio-description">도메인 요청, DNS 쿼리 패턴</span>
+                            </label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="emailLogs" name="logSource" value="email">
+                            <label for="emailLogs">
+                                <strong>이메일 로그</strong>
+                                <span class="radio-description">이메일 송수신, 첨부파일 패턴</span>
+                            </label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="dbLogs" name="logSource" value="database">
+                            <label for="dbLogs">
+                                <strong>데이터베이스 로그</strong>
+                                <span class="radio-description">데이터 접근, 쿼리 실행 패턴</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="learningPeriod">학습 기간</label>
+                    <select id="learningPeriod">
+                        <option value="7">7일</option>
+                        <option value="14">14일</option>
+                        <option value="30" selected>30일</option>
+                        <option value="60">60일</option>
+                        <option value="90">90일</option>
+                    </select>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>권장사항:</strong> 정확한 베이스라인 설정을 위해 최소 30일간의 학습 기간을 권장합니다.
+                </div>
+            </div>
+
+            <!-- Step 3: 분석 메트릭 -->
+            <div class="step-content" id="content3">
+                <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">분석 메트릭 설정</h3>
+                
+                <div id="selectedLogInfo" class="alert alert-info" style="display: none;">
+                    <strong>선택된 로그 소스:</strong> <span id="logSourceName">-</span><br>
+                    <strong>분석 가능한 메트릭:</strong> <span id="availableMetrics">-</span>
+                </div>
+                
+                <div class="metric-card" id="timeMetricCard">
+                    <h4>📅 시간 기반 분석</h4>
+                    <p>사용자의 시간적 행동 패턴을 분석하여 이상 징후를 탐지합니다.</p>
+                    <div class="checkbox-group" style="margin-top: 1rem;">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="loginTime" value="login_time">
+                            <label for="loginTime">로그인 시간 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sessionDuration" value="session_duration">
+                            <label for="sessionDuration">세션 지속 시간</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="afterHours" value="after_hours">
+                            <label for="afterHours">업무시간 외 활동</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="weekendActivity" value="weekend_activity">
+                            <label for="weekendActivity">주말/휴일 접근</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="loginFrequency" value="login_frequency">
+                            <label for="loginFrequency">로그인 빈도 변화</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sessionOverlap" value="session_overlap">
+                            <label for="sessionOverlap">동시 세션 탐지</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="idleTime" value="idle_time">
+                            <label for="idleTime">비활성 시간 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="timeZoneAnomaly" value="timezone_anomaly">
+                            <label for="timeZoneAnomaly">시간대 이상 접근</label>
+                        </div>
+                    </div>
+                    <div id="timeMetricUnavailable" class="metric-unavailable" style="display: none;">
+                        이 로그 소스에서는 시간 기반 분석이 제한적이거나 불가능합니다.
+                    </div>
+                </div>
+
+                <div class="metric-card" id="networkMetricCard">
+                    <h4>🌐 네트워크 기반 분석</h4>
+                    <p>네트워크 접근 패턴과 지리적 위치를 분석하여 이상 징후를 탐지합니다.</p>
+                    <div class="checkbox-group" style="margin-top: 1rem;">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="ipAddress" value="ip_address">
+                            <label for="ipAddress">IP 주소 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="geoLocation" value="geo_location">
+                            <label for="geoLocation">지리적 위치 분석</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dataVolume" value="data_volume">
+                            <label for="dataVolume">데이터 전송량</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="impossibleTravel" value="impossible_travel">
+                            <label for="impossibleTravel">불가능한 이동 탐지</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="vpnUsage" value="vpn_usage">
+                            <label for="vpnUsage">VPN 사용 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="networkDevice" value="network_device">
+                            <label for="networkDevice">디바이스 변경 탐지</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="bandwidthUsage" value="bandwidth_usage">
+                            <label for="bandwidthUsage">대역폭 사용량 이상</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="connectionPattern" value="connection_pattern">
+                            <label for="connectionPattern">연결 패턴 분석</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="proxyBypass" value="proxy_bypass">
+                            <label for="proxyBypass">프록시 우회 시도</label>
+                        </div>
+                    </div>
+                    <div id="networkMetricUnavailable" class="metric-unavailable" style="display: none;">
+                        이 로그 소스에서는 네트워크 기반 분석이 제한적이거나 불가능합니다.
+                    </div>
+                </div>
+
+                <div class="metric-card" id="accessMetricCard">
+                    <h4>🔐 접근 기반 분석</h4>
+                    <p>시스템 리소스 접근 패턴과 권한 사용을 분석하여 이상 징후를 탐지합니다.</p>
+                    <div class="checkbox-group" style="margin-top: 1rem;">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="resourceAccess" value="resource_access">
+                            <label for="resourceAccess">리소스 접근 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="authFailures" value="auth_failures">
+                            <label for="authFailures">인증 실패 횟수</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="privilegeEscalation" value="privilege_escalation">
+                            <label for="privilegeEscalation">권한 상승 시도</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sensitiveDataAccess" value="sensitive_data">
+                            <label for="sensitiveDataAccess">민감 데이터 접근</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="fileDownload" value="file_download">
+                            <label for="fileDownload">파일 다운로드 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="adminAccess" value="admin_access">
+                            <label for="adminAccess">관리자 권한 사용</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="applicationUsage" value="app_usage">
+                            <label for="applicationUsage">애플리케이션 사용 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="databaseQuery" value="db_query">
+                            <label for="databaseQuery">데이터베이스 쿼리 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="emailBehavior" value="email_behavior">
+                            <label for="emailBehavior">이메일 행동 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="systemCommand" value="system_command">
+                            <label for="systemCommand">시스템 명령어 실행</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="remoteAccess" value="remote_access">
+                            <label for="remoteAccess">원격 접근 패턴</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="shareAccess" value="share_access">
+                            <label for="shareAccess">공유 폴더 접근</label>
+                        </div>
+                    </div>
+                    <div id="accessMetricUnavailable" class="metric-unavailable" style="display: none;">
+                        이 로그 소스에서는 접근 기반 분석이 제한적이거나 불가능합니다.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: 임계값 설정 -->
+            <div class="step-content" id="content4">
+                <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">이상 징후 임계값 설정</h3>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div class="form-group">
+                        <label for="anomalyThreshold">이상 징후 민감도</label>
+                        <select id="anomalyThreshold">
+                            <option value="low">낮음 (보수적)</option>
+                            <option value="medium" selected>보통 (권장)</option>
+                            <option value="high">높음 (민감함)</option>
+                            <option value="custom">사용자 정의</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="alertSeverity">경고 심각도</label>
+                        <select id="alertSeverity">
+                            <option value="info">정보</option>
+                            <option value="low">낮음</option>
+                            <option value="medium" selected>보통</option>
+                            <option value="high">높음</option>
+                            <option value="critical">매우 높음</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="riskScore">위험 점수 임계값 (0-100)</label>
+                    <input type="range" id="riskScore" min="0" max="100" value="70" style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">
+                        <span>0 (낮음)</span>
+                        <span id="riskScoreValue">70</span>
+                        <span>100 (높음)</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>알림 설정</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="emailAlert" value="email" checked>
+                            <label for="emailAlert">이메일 알림</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="slackAlert" value="slack">
+                            <label for="slackAlert">Slack 알림</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="smsAlert" value="sms">
+                            <label for="smsAlert">SMS 알림</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="dashboardAlert" value="dashboard" checked>
+                            <label for="dashboardAlert">대시보드 표시</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>참고:</strong> 임계값이 낮을수록 더 많은 이상 징후를 탐지하지만, 오탐률도 증가할 수 있습니다.
+                </div>
+            </div>
+
+            <!-- Step 5: 검토 및 완료 -->
+            <div class="step-content" id="content5">
+                <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">설정 검토 및 완료</h3>
+                
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h4>📋 기본 정보</h4>
+                        <div class="summary-item">
+                            <span>프로파일 이름:</span>
+                            <span id="summaryName">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>프로파일 유형:</span>
+                            <span id="summaryType">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>분석 범위:</span>
+                            <span id="summaryScope">-</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h4>📊 데이터 소스</h4>
+                        <div class="summary-item">
+                            <span>학습 기간:</span>
+                            <span id="summaryLearning">-</span>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <div id="summaryDataSources">선택된 소스가 없습니다</div>
+                        </div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h4>📈 분석 메트릭</h4>
+                        <div id="summaryMetrics">선택된 메트릭이 없습니다</div>
+                    </div>
+
+                    <div class="summary-card">
+                        <h4>⚠️ 알림 설정</h4>
+                        <div class="summary-item">
+                            <span>민감도:</span>
+                            <span id="summarySensitivity">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>위험 점수 임계값:</span>
+                            <span id="summaryRiskScore">-</span>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <div id="summaryAlerts">알림 설정이 없습니다</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>다음 단계:</strong> 프로파일 생성 후 시스템이 자동으로 학습을 시작합니다. 초기 베이스라인 설정까지 약 24-48시간이 소요될 수 있습니다.
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-secondary" id="prevBtn" onclick="prevStep()" disabled>
+                ← 이전
+            </button>
+            <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">
+                다음 →
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 5;
+
+        // 로그 소스별 메트릭 가용성 매트릭스 (확장된 메트릭)
+        const logSourceMetrics = {
+            'windows': {
+                'name': 'Windows 이벤트 로그',
+                'time_based': { 
+                    'available': true, 
+                    'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'session_overlap', 'idle_time']
+                },
+                'network_based': { 
+                    'available': false, 
+                    'metrics': [], 
+                    'reason': 'Windows 이벤트 로그는 네트워크 정보를 포함하지 않습니다.'
+                },
+                'access_based': { 
+                    'available': true, 
+                    'metrics': ['resource_access', 'auth_failures', 'privilege_escalation', 'admin_access', 'app_usage', 'system_command', 'remote_access']
+                }
+            },
+            'ad': {
+                'name': 'Active Directory',
+                'time_based': { 
+                    'available': true, 
+                    'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'session_overlap']
+                },
+                'network_based': { 
+                    'available': false, 
+                    'metrics': [], 
+                    'reason': 'Active Directory는 네트워크 트래픽 정보를 제공하지 않습니다.'
+                },
+                'access_based': { 
+                    'available': true, 
+                    'metrics': ['resource_access', 'auth_failures', 'privilege_escalation', 'admin_access', 'app_usage', 'system_command', 'remote_access']
+                }
+            },
+            'firewall': {
+                'name': '방화벽 로그',
+                'time_based': { 
+                    'available': true, 
+                    'metrics': ['login_time', 'after_hours', 'weekend_activity', 'timezone_anomaly']
+                },
+                'network_based': { 
+                    'available': true, 
+                    'metrics': ['ip_address', 'geo_location', 'data_volume', 'impossible_travel', 'network_device', 'bandwidth_usage', 'connection_pattern']
+                },
+                'access_based': { 
+                    'available': false, 
+                    'metrics': [], 
+                    'reason': '방화벽 로그는 애플리케이션 수준의 접근 정보를 제공하지 않습니다.'
+                }
+            },
+            'proxy': {
+                'name': '프록시/웹 로그',
+                'time_based': { 
+                    'available': true, 
+                    'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'timezone_anomaly']
+                },
+                'network_based': { 
+                    'available': true, 
+                    'metrics': ['ip_address', 'geo_location', 'data_volume', 'impossible_travel', 'network_device', 'bandwidth_usage', 'connection_pattern', 'proxy_bypass']
+                },
+                'access_based': { 
+                    'available': true, 
+                    'metrics': ['resource_access', 'auth_failures', 'file_download', 'app_usage', 'share_access']
+                }
+            },
+            'vpn': {
+                'name': 'VPN 로그',
+                'time_based': { 
+                    'available': true, 
+                    'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'session_overlap', 'timezone_anomaly']
+                },
+                'network_based': { 
+                    'available': true, 
+                    'metrics': ['ip_address', 'geo_location', 'data_volume', 'impossible_travel', 'vpn_usage', 'network_device', 'bandwidth_usage', 'connection_pattern']
+                },
+                'access_based': { 
+                    'available': false, 
+                    'metrics': ['auth_failures'], 
+                    'reason': 'VPN 로그는 VPN 연결 정보만 제공하며, 내부 리소스 접근은 추적할 수 없습니다.'
+                }
+            },
+            'dns': {
+                'name': 'DNS 로그',
+                'time_based': { 
+                    'available': true, 
+                    'metrics': ['login_time', 'after_hours', 'weekend_activity', 'timezone_anomaly']
+                },
+                'network_based': { 
+                    'available': true, 
+                    'metrics': ['ip_address', 'geo_location', 'impossible_travel', 'connection_pattern']
+                },
+                'access_based': { 
+                    'available': false, 
+                    'metrics': [], 
+                    'reason': 'DNS 로그는 도메인 요청 정보만 제공하며, 인증이나 권한 정보는 포함하지 않습니다.'
+                }
+            },
+            'email': {
+                'name': '이메일 로그',
+                'time_based': { 
+                    'available': true, 
+                    'metrics': ['login_time', 'after_hours', 'weekend_activity', 'login_frequency', 'timezone_anomaly']
+                },
+                'network_based': { 
+                    'available': true, 
+                    'metrics': ['ip_address', 'data_volume', 'impossible_travel', 'network_device']
+                },
+                'access_based': { 
+                    'available': true, 
+                    'metrics': ['resource_access', 'auth_failures', 'sensitive_data', 'file_download', 'email_behavior']
+                }
+            },
+            'database': {
+                'name': '데이터베이스 로그',
+                'time_based': { 
+                    'available': true, 
+                    'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'idle_time']
+                },
+                'network_based': { 
+                    'available': false, 
+                    'metrics': [], 
+                    'reason': '데이터베이스 로그는 네트워크 수준 정보를 제공하지 않습니다.'
+                },
+                'access_based': { 
+                    'available': true, 
+                    'metrics': ['resource_access', 'auth_failures', 'privilege_escalation', 'sensitive_data', 'admin_access', 'db_query', 'system_command']
+                }
+            }
+        };
+
+        function updateProgressBar() {
+            for (let i = 1; i <= totalSteps; i++) {
+                const stepCircle = document.getElementById(`step${i}`);
+                
+                if (i < currentStep) {
+                    stepCircle.className = 'step-circle completed';
+                    stepCircle.innerHTML = '✓';
+                } else if (i === currentStep) {
+                    stepCircle.className = 'step-circle active';
+                    stepCircle.innerHTML = i;
+                } else {
+                    stepCircle.className = 'step-circle inactive';
+                    stepCircle.innerHTML = i;
+                }
+            }
+        }
+
+        function showStep(step) {
+            for (let i = 1; i <= totalSteps; i++) {
+                document.getElementById(`content${i}`).classList.remove('active');
+            }
+            
+            document.getElementById(`content${step}`).classList.add('active');
+            
+            document.getElementById('prevBtn').disabled = step === 1;
+            
+            const nextBtn = document.getElementById('nextBtn');
+            if (step === totalSteps) {
+                nextBtn.innerHTML = '프로파일 생성 🚀';
+                nextBtn.onclick = createProfile;
+            } else {
+                nextBtn.innerHTML = '다음 →';
+                nextBtn.onclick = nextStep;
+            }
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                if (validateStep(currentStep)) {
+                    currentStep++;
+                    showStep(currentStep);
+                    updateProgressBar();
+                    
+                    if (currentStep === totalSteps) {
+                        updateSummary();
+                    }
+                }
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                showStep(currentStep);
+                updateProgressBar();
+            }
+        }
+
+        function validateStep(step) {
+            switch(step) {
+                case 1:
+                    const profileName = document.getElementById('profileName').value.trim();
+                    if (!profileName) {
+                        alert('프로파일 이름을 입력해주세요.');
+                        return false;
+                    }
+                    return true;
+                case 2:
+                    const selectedLogSource = document.querySelector('input[name="logSource"]:checked');
+                    if (!selectedLogSource) {
+                        alert('로그 소스를 선택해주세요.');
+                        return false;
+                    }
+                    return true;
+                case 3:
+                    const metrics = document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled)');
+                    if (metrics.length === 0) {
+                        alert('최소 하나의 분석 메트릭을 선택해주세요.');
+                        return false;
+                    }
+                    return true;
+                default:
+                    return true;
+            }
+        }
+
+        function updateMetricsBasedOnLogSource() {
+            const selectedLogSource = document.querySelector('input[name="logSource"]:checked');
+            if (!selectedLogSource) {
+                disableAllMetrics();
+                return;
+            }
+
+            const logType = selectedLogSource.value;
+            const logConfig = logSourceMetrics[logType];
+
+            const logInfo = document.getElementById('selectedLogInfo');
+            const logSourceName = document.getElementById('logSourceName');
+            const availableMetrics = document.getElementById('availableMetrics');
+            
+            logInfo.style.display = 'block';
+            logSourceName.textContent = logConfig.name;
+            
+            const allAvailableMetrics = [];
+            
+            updateMetricCard('time', logConfig.time_based, allAvailableMetrics);
+            updateMetricCard('network', logConfig.network_based, allAvailableMetrics);
+            updateMetricCard('access', logConfig.access_based, allAvailableMetrics);
+
+            availableMetrics.textContent = allAvailableMetrics.length > 0 ? 
+                allAvailableMetrics.join(', ') : '사용 가능한 메트릭이 없습니다';
+        }
+
+        function updateMetricCard(type, config, allAvailableMetrics) {
+            const cardId = type + 'MetricCard';
+            const unavailableId = type + 'MetricUnavailable';
+            const card = document.getElementById(cardId);
+            const unavailableDiv = document.getElementById(unavailableId);
+            
+            if (config.available) {
+                card.classList.remove('disabled');
+                unavailableDiv.style.display = 'none';
+                
+                const checkboxes = card.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    const metricValue = checkbox.value;
+                    if (config.metrics.includes(metricValue)) {
+                        checkbox.disabled = false;
+                        checkbox.parentElement.style.opacity = '1';
+                        allAvailableMetrics.push(checkbox.nextElementSibling.textContent);
+                    } else {
+                        checkbox.disabled = true;
+                        checkbox.checked = false;
+                        checkbox.parentElement.style.opacity = '0.5';
+                    }
+                });
+            } else {
+                card.classList.add('disabled');
+                unavailableDiv.style.display = 'block';
+                if (config.reason) {
+                    unavailableDiv.textContent = config.reason;
+                }
+                
+                const checkboxes = card.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.disabled = true;
+                    checkbox.checked = false;
+                });
+            }
+        }
+
+        function disableAllMetrics() {
+            document.getElementById('selectedLogInfo').style.display = 'none';
+            
+            const metricCards = ['timeMetricCard', 'networkMetricCard', 'accessMetricCard'];
+            metricCards.forEach(cardId => {
+                const card = document.getElementById(cardId);
+                card.classList.add('disabled');
+                
+                const checkboxes = card.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => {
+                    checkbox.disabled = true;
+                    checkbox.checked = false;
+                });
+            });
+        }
+
+        function setupLogSourceListeners() {
+            const radioButtons = document.querySelectorAll('input[name="logSource"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    document.querySelectorAll('.radio-item').forEach(item => {
+                        item.classList.remove('selected');
+                    });
+                    
+                    if (this.checked) {
+                        this.closest('.radio-item').classList.add('selected');
+                        updateMetricsBasedOnLogSource();
+                    }
+                });
+            });
+        }
+
+        function updateSummary() {
+            document.getElementById('summaryName').textContent = document.getElementById('profileName').value || '-';
+            document.getElementById('summaryType').textContent = document.getElementById('profileType').selectedOptions[0].textContent;
+            document.getElementById('summaryScope').textContent = document.getElementById('analysisScope').selectedOptions[0].textContent;
+            
+            document.getElementById('summaryLearning').textContent = document.getElementById('learningPeriod').value + '일';
+            
+            const selectedLogSource = document.querySelector('input[name="logSource"]:checked');
+            const sourcesContainer = document.getElementById('summaryDataSources');
+            if (selectedLogSource) {
+                const logConfig = logSourceMetrics[selectedLogSource.value];
+                sourcesContainer.innerHTML = `<span class="tag">${logConfig.name}</span>`;
+            } else {
+                sourcesContainer.textContent = '선택된 소스가 없습니다';
+            }
+            
+            const selectedMetrics = Array.from(document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled)'))
+                .map(cb => cb.nextElementSibling.textContent);
+            const metricsContainer = document.getElementById('summaryMetrics');
+            if (selectedMetrics.length > 0) {
+                metricsContainer.innerHTML = selectedMetrics.map(metric => `<span class="tag">${metric}</span>`).join('');
+            } else {
+                metricsContainer.textContent = '선택된 메트릭이 없습니다';
+            }
+            
+            document.getElementById('summarySensitivity').textContent = document.getElementById('anomalyThreshold').selectedOptions[0].textContent;
+            document.getElementById('summaryRiskScore').textContent = document.getElementById('riskScore').value + '점';
+            
+            const selectedAlerts = Array.from(document.querySelectorAll('#content4 input[type="checkbox"]:checked'))
+                .map(cb => cb.nextElementSibling.textContent);
+            const alertsContainer = document.getElementById('summaryAlerts');
+            if (selectedAlerts.length > 0) {
+                alertsContainer.innerHTML = selectedAlerts.map(alert => `<span class="tag">${alert}</span>`).join('');
+            } else {
+                alertsContainer.textContent = '알림 설정이 없습니다';
+            }
+        }
+
+        function createProfile() {
+            const btn = document.getElementById('nextBtn');
+            btn.disabled = true;
+            btn.innerHTML = '생성 중... ⏳';
+            
+            // 프로파일 데이터 수집
+            const profileData = {
+                id: currentEditProfile ? currentEditProfile : generateUniqueId(),
+                name: document.getElementById('profileName').value,
+                description: document.getElementById('profileDescription').value,
+                profileType: document.getElementById('profileType').value,
+                analysisScope: document.getElementById('analysisScope').value,
+                
+                // 로그 소스 정보
+                logSource: document.querySelector('input[name="logSource"]:checked')?.value,
+                logSourceName: document.querySelector('input[name="logSource"]:checked') ? 
+                    logSourceMetrics[document.querySelector('input[name="logSource"]:checked').value].name : null,
+                learningPeriod: document.getElementById('learningPeriod').value,
+                
+                // 분석 메트릭 - 체크된 항목들의 라벨 텍스트 수집
+                selectedMetrics: Array.from(document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled)'))
+                    .map(cb => cb.nextElementSibling.textContent),
+                
+                // 임계값 설정
+                anomalyThreshold: document.getElementById('anomalyThreshold').selectedOptions[0].textContent,
+                alertSeverity: document.getElementById('alertSeverity').value,
+                riskScore: document.getElementById('riskScore').value,
+                
+                // 알림 설정
+                alerts: Array.from(document.querySelectorAll('#content4 input[type="checkbox"]:checked'))
+                    .map(cb => cb.nextElementSibling.textContent),
+                
+                // 생성/수정 시간
+                createdAt: currentEditProfile ? 
+                    (getProfileById(currentEditProfile)?.createdAt || new Date().toISOString()) : 
+                    new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // 로컬 스토리지에 저장
+            saveProfile(profileData);
+            
+            setTimeout(() => {
+                alert(`UBA 프로파일이 성공적으로 ${currentEditProfile ? '수정' : '생성'}되었습니다!\n\n시스템이 곧 학습을 시작할 예정입니다.`);
+                btn.innerHTML = '완료 ✅';
+                
+                setTimeout(() => {
+                    // 모달 모드인지 확인
+                    if (isModalMode()) {
+                        // 부모 창에 닫기 신호 전달
+                        window.parent.closeWizardModal();
+                    } else {
+                        // 목록 페이지로 이동
+                        window.location.href = 'index.html';
+                    }
+                }, 1000);
+            }, 1000);
+        }
+
+        // 프로파일 저장 함수
+        function saveProfile(profileData) {
+            // 기존 프로파일 목록 가져오기
+            let profiles = localStorage.getItem('ubaProfiles');
+            profiles = profiles ? JSON.parse(profiles) : [];
+            
+            // 편집 모드인 경우 기존 프로파일 업데이트, 아니면 새로 추가
+            if (currentEditProfile) {
+                const index = profiles.findIndex(p => p.id === currentEditProfile);
+                if (index !== -1) {
+                    profiles[index] = profileData;
+                } else {
+                    profiles.push(profileData);
+                }
+            } else {
+                profiles.push(profileData);
+            }
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem('ubaProfiles', JSON.stringify(profiles));
+        }
+
+        // 고유 ID 생성
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        // ID로 프로파일 가져오기
+        function getProfileById(id) {
+            const profiles = localStorage.getItem('ubaProfiles');
+            if (!profiles) return null;
+            
+            const profileArray = JSON.parse(profiles);
+            return profileArray.find(profile => profile.id === id);
+        }
+
+        // 편집할 프로파일 ID
+        let currentEditProfile = null;
+
+        // URL에서 편집 파라미터 확인
+        function checkEditMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const editId = urlParams.get('edit');
+            
+            if (editId) {
+                currentEditProfile = editId;
+                loadProfileData(editId);
+            }
+            
+            // 모달 모드인 경우 취소 버튼 동작 변경
+            if (isModalMode()) {
+                const cancelBtn = document.querySelector('.btn-secondary[style*="margin-right: auto"]');
+                if (cancelBtn) {
+                    cancelBtn.onclick = function() {
+                        if (confirm('작업을 취소하시겠습니까?')) {
+                            window.parent.closeWizardModal();
+                        }
+                    };
+                }
+            }
+        }
+        
+        // 모달 모드인지 확인하는 함수
+        function isModalMode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('modal') === 'true';
+        }
+
+        // 프로파일 데이터 로드
+        function loadProfileData(profileId) {
+            const profile = getProfileById(profileId);
+            if (!profile) return;
+            
+            // 페이지 타이틀 업데이트
+            document.querySelector('.header h1').textContent = 'UBA 프로파일 편집';
+            document.querySelector('.header p').textContent = profile.name + ' 프로파일을 수정합니다';
+            
+            // 기본 정보 입력
+            document.getElementById('profileName').value = profile.name;
+            document.getElementById('profileDescription').value = profile.description || '';
+            
+            // 셀렉트 박스 값 설정
+            setSelectValue('profileType', profile.profileType);
+            setSelectValue('analysisScope', profile.analysisScope);
+            setSelectValue('learningPeriod', profile.learningPeriod);
+            
+            // 로그 소스 선택
+            if (profile.logSource) {
+                const logSourceRadio = document.getElementById(profile.logSource + 'Logs');
+                if (logSourceRadio) {
+                    logSourceRadio.checked = true;
+                    logSourceRadio.closest('.radio-item').classList.add('selected');
+                    updateMetricsBasedOnLogSource();
+                }
+            }
+            
+            // 임계값 설정
+            setSelectValue('anomalyThreshold', getKeyByText('anomalyThreshold', profile.anomalyThreshold));
+            setSelectValue('alertSeverity', profile.alertSeverity);
+            
+            const riskScoreSlider = document.getElementById('riskScore');
+            riskScoreSlider.value = profile.riskScore || 70;
+            document.getElementById('riskScoreValue').textContent = riskScoreSlider.value;
+            
+            // 알림 설정
+            const alertCheckboxes = document.querySelectorAll('#content4 input[type="checkbox"]');
+            alertCheckboxes.forEach(checkbox => {
+                checkbox.checked = profile.alerts && profile.alerts.includes(checkbox.nextElementSibling.textContent);
+            });
+            
+            // 메트릭 설정 (약간 딜레이를 줘서 메트릭 업데이트가 완료된 후에 실행)
+            setTimeout(() => {
+                const metricCheckboxes = document.querySelectorAll('#content3 input[type="checkbox"]:not(:disabled)');
+                metricCheckboxes.forEach(checkbox => {
+                    checkbox.checked = profile.selectedMetrics && 
+                        profile.selectedMetrics.includes(checkbox.nextElementSibling.textContent);
+                });
+            }, 300);
+        }
+
+        // 셀렉트 박스 값 설정 헬퍼 함수
+        function setSelectValue(selectId, value) {
+            const select = document.getElementById(selectId);
+            if (select && value) {
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].value === value) {
+                        select.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // 텍스트로 셀렉트 박스 값 찾기
+        function getKeyByText(selectId, text) {
+            const select = document.getElementById(selectId);
+            if (select && text) {
+                for (let i = 0; i < select.options.length; i++) {
+                    if (select.options[i].textContent === text) {
+                        return select.options[i].value;
+                    }
+                }
+            }
+            return null;
+        }
+
+        function resetWizard() {
+            currentStep = 1;
+            showStep(currentStep);
+            updateProgressBar();
+            
+            document.getElementById('profileName').value = '';
+            document.getElementById('profileDescription').value = '';
+            document.getElementById('profileType').selectedIndex = 0;
+            document.getElementById('analysisScope').selectedIndex = 0;
+            document.getElementById('learningPeriod').selectedIndex = 2;
+            document.getElementById('anomalyThreshold').selectedIndex = 1;
+            document.getElementById('alertSeverity').selectedIndex = 2;
+            document.getElementById('riskScore').value = 70;
+            document.getElementById('riskScoreValue').textContent = '70';
+            
+            const radioButtons = document.querySelectorAll('input[name="logSource"]');
+            radioButtons.forEach(radio => {
+                radio.checked = false;
+                radio.closest('.radio-item').classList.remove('selected');
+            });
+            
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                cb.disabled = false;
+            });
+            
+            document.getElementById('emailAlert').checked = true;
+            document.getElementById('dashboardAlert').checked = true;
+            
+            disableAllMetrics();
+            
+            // 편집 모드 초기화
+            currentEditProfile = null;
+            
+            // 페이지 타이틀 복원
+            document.querySelector('.header h1').textContent = 'UBA 프로파일 마법사';
+            document.querySelector('.header p').textContent = '사용자 및 엔터티 행동 분석 프로파일을 쉽게 설정하세요';
+        }
+
+        // 위험 점수 슬라이더 업데이트
+        document.getElementById('riskScore').addEventListener('input', function() {
+            document.getElementById('riskScoreValue').textContent = this.value;
+        });
+
+        // 초기화
+        updateProgressBar();
+        showStep(currentStep);
+        
+        setTimeout(() => {
+            setupLogSourceListeners();
+            disableAllMetrics();
+            checkEditMode(); // 편집 모드 확인
+        }, 100);
+        
+        // 취소 버튼 추가
+        const buttonGroup = document.querySelector('.button-group');
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-secondary';
+        cancelBtn.textContent = '취소';
+        cancelBtn.style.marginRight = 'auto';
+        cancelBtn.onclick = function() {
+            if (confirm('작업을 취소하고 목록으로 돌아가시겠습니까?')) {
+                // 모달 모드인지 확인
+                if (isModalMode()) {
+                    window.parent.closeWizardModal();
+                } else {
+                    window.location.href = 'index.html';
+                }
+            }
+        };
+        
+        // prevBtn 앞에 취소 버튼 삽입
+        buttonGroup.insertBefore(cancelBtn, document.getElementById('prevBtn'));
+    </script>
+</body>
+</html>
+                
