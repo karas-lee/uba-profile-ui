@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UBA 프로파일 마법사</title>
+    <!-- API 스크립트 추가 -->
+    <script src="js/api.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1185,7 +1187,7 @@
             const nextBtn = document.getElementById('nextBtn');
             if (step === totalSteps) {
                 nextBtn.innerHTML = '프로파일 생성 🚀';
-                nextBtn.onclick = createProfile;
+                nextBtn.onclick = submitProfileForm;
             } else {
                 nextBtn.innerHTML = '다음 →';
                 nextBtn.onclick = nextStep;
@@ -1269,6 +1271,7 @@
                 allAvailableMetrics.join(', ') : '사용 가능한 메트릭이 없습니다';
         }
 
+        // 메트릭 카드 업데이트 함수
         function updateMetricCard(type, config, allAvailableMetrics) {
             const cardId = type + 'MetricCard';
             const unavailableId = type + 'MetricUnavailable';
@@ -1318,12 +1321,16 @@
                 }
 
                 // 선택된 항목 수 업데이트
-                document.getElementById(type + 'SelectedCount').textContent = checkedCount + '개 선택됨';
+                document.getElementById(type + 'SelectedCount').textContent = `${checkedCount}개 선택됨`;
             } else {
                 card.classList.add('disabled');
                 unavailableDiv.style.display = 'block';
+
+                // 사유가 있으면 표시, 없으면 기본 메시지
                 if (config.reason) {
                     unavailableDiv.textContent = config.reason;
+                } else {
+                    unavailableDiv.textContent = `이 로그 소스에서는 ${type} 기반 분석이 불가능합니다.`;
                 }
 
                 // 전체 선택 버튼 비활성화
@@ -1336,7 +1343,7 @@
                 // 선택된 항목 수 초기화
                 document.getElementById(type + 'SelectedCount').textContent = '0개 선택됨';
 
-                const checkboxes = card.querySelectorAll('input[type="checkbox"]');
+                const checkboxes = card.querySelectorAll('input[type="checkbox"]:not(#' + selectAllId + ')');
                 checkboxes.forEach(checkbox => {
                     checkbox.disabled = true;
                     checkbox.checked = false;
@@ -1469,15 +1476,15 @@
             }
         }
 
-        function createProfile() {
+        // 프로필 생성 함수
+        async function submitProfileForm() {
             const btn = document.getElementById('nextBtn');
             btn.disabled = true;
             btn.innerHTML = '생성 중... ⏳';
 
             try {
-                // 프로파일 데이터 수집
-                const profileData = {
-                    id: currentEditProfile ? currentEditProfile : generateUniqueId(),
+                // 프로필 데이터 수집
+                const formData = {
                     name: document.getElementById('profileName').value,
                     description: document.getElementById('profileDescription').value,
                     profileType: document.getElementById('profileType').value,
@@ -1487,8 +1494,12 @@
                     logSource: document.querySelector('input[name="logSource"]:checked')?.value,
                     logSourceName: document.querySelector('input[name="logSource"]:checked') ?
                         logSourceMetrics[document.querySelector('input[name="logSource"]:checked').value].name : null,
+                    logSourceType: document.querySelector('input[name="logSource"]:checked')?.value,
                     learningPeriod: document.getElementById('learningPeriod').value,
+                };
 
+                // 추가 데이터는 data 필드에 저장
+                const additionalData = {
                     // 분석 메트릭 - 체크된 항목들의 라벨 텍스트 수집 (전체 선택 체크박스 제외)
                     selectedMetrics: Array.from(document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled):not(#selectAllTime):not(#selectAllNetwork):not(#selectAllAccess)'))
                         .map(cb => cb.nextElementSibling.textContent),
@@ -1501,20 +1512,35 @@
                     // 알림 설정
                     alerts: Array.from(document.querySelectorAll('#content4 input[type="checkbox"]:checked'))
                         .map(cb => cb.nextElementSibling.textContent),
-
-                    // 생성/수정 시간
-                    createdAt: currentEditProfile ?
-                        (getProfileById(currentEditProfile)?.createdAt || new Date().toISOString()) :
-                        new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
                 };
 
-                // 로컬 스토리지에 저장
-                const saveResult = saveProfile(profileData);
+                // API 호출을 위한 데이터 준비 (컬럼명 매핑)
+                const profileData = {
+                    id: currentEditProfile || generateUniqueId(),
+                    name: formData.name,
+                    description: formData.description,
+                    profileType: formData.profileType,
+                    analysisScope: formData.analysisScope,
+                    logSourceName: formData.logSourceName,
+                    logSourceType: formData.logSourceType,
+                    ...additionalData // 나머지 데이터
+                };
+
+                console.log('프로필 생성 요청 데이터:', profileData);
+
+                // 서버에 저장
+                const saveResult = await saveProfile(profileData);
+                console.log('프로필 저장 결과:', saveResult);
 
                 if (saveResult) {
                     alert(`UBA 프로파일이 성공적으로 ${currentEditProfile ? '수정' : '생성'}되었습니다!\n\n시스템이 곧 학습을 시작할 예정입니다.`);
                     btn.innerHTML = '완료 ✅';
+
+                    // 즉시 프로필 목록 검증
+                    const allProfiles = await fetchProfiles();
+                    console.log('저장 후 현재 프로필 목록:', allProfiles);
+                    const savedProfile = allProfiles.find(p => p.id === profileData.id);
+                    console.log('저장된 프로필 확인:', savedProfile);
 
                     // 페이지 이동 로직을 즉시 실행
                     if (isModalMode()) {
@@ -1538,33 +1564,22 @@
         }
 
         // 프로파일 저장 함수
-        function saveProfile(profileData) {
+        async function saveProfile(profileData) {
             try {
-                // 기존 프로파일 목록 가져오기
-                let profiles = localStorage.getItem('ubaProfiles');
-                profiles = profiles ? JSON.parse(profiles) : [];
-
-                // 편집 모드인 경우 기존 프로파일 업데이트, 아니면 새로 추가
+                // API를 통해 서버에 저장
+                let result;
                 if (currentEditProfile) {
-                    const index = profiles.findIndex(p => p.id === currentEditProfile);
-                    if (index !== -1) {
-                        profiles[index] = profileData;
-                    } else {
-                        profiles.push(profileData);
-                    }
+                    // 기존 프로파일 업데이트
+                    result = await updateProfile(currentEditProfile, profileData);
                 } else {
-                    profiles.push(profileData);
+                    // 새 프로파일 생성
+                    if (!profileData.id) {
+                        profileData.id = generateUniqueId();
+                    }
+                    result = await createProfile(profileData);
                 }
 
-                // 로컬 스토리지에 저장
-                localStorage.setItem('ubaProfiles', JSON.stringify(profiles));
-
-                // 저장 확인 - 실제로 저장되었는지 확인
-                const savedProfiles = localStorage.getItem('ubaProfiles');
-                const parsedProfiles = savedProfiles ? JSON.parse(savedProfiles) : [];
-                const savedProfile = parsedProfiles.find(p => p.id === profileData.id);
-
-                return !!savedProfile; // 저장된 프로파일이 존재하면 true 반환
+                return !!result; // 저장 성공 여부 반환
             } catch (error) {
                 console.error('프로파일 저장 오류:', error);
                 return false;
@@ -1577,25 +1592,27 @@
         }
 
         // ID로 프로파일 가져오기
-        function getProfileById(id) {
-            const profiles = localStorage.getItem('ubaProfiles');
-            if (!profiles) return null;
-
-            const profileArray = JSON.parse(profiles);
-            return profileArray.find(profile => profile.id === id);
+        async function getProfileById(id) {
+            try {
+                // API를 통해 서버에서 프로필 가져오기
+                return await fetchProfileById(id);
+            } catch (error) {
+                console.error('프로필 조회 오류:', error);
+                return null;
+            }
         }
 
         // 편집할 프로파일 ID
         let currentEditProfile = null;
 
         // URL에서 편집 파라미터 확인
-        function checkEditMode() {
+        async function checkEditMode() {
             const urlParams = new URLSearchParams(window.location.search);
             const editId = urlParams.get('edit');
 
             if (editId) {
                 currentEditProfile = editId;
-                loadProfileData(editId);
+                await loadProfileData(editId);
             }
 
             // 모달 모드인 경우 취소 버튼 동작 변경
@@ -1618,9 +1635,14 @@
         }
 
         // 프로파일 데이터 로드
-        function loadProfileData(profileId) {
-            const profile = getProfileById(profileId);
-            if (!profile) return;
+        async function loadProfileData(profileId) {
+            const profile = await getProfileById(profileId);
+            if (!profile) {
+                console.error('프로필을 찾을 수 없습니다:', profileId);
+                return;
+            }
+
+            console.log('불러온 프로필 데이터:', profile);
 
             // 페이지 타이틀 업데이트
             document.querySelector('.header h1').textContent = 'UBA 프로파일 편집';
@@ -1631,42 +1653,134 @@
             document.getElementById('profileDescription').value = profile.description || '';
 
             // 셀렉트 박스 값 설정
-            setSelectValue('profileType', profile.profileType);
-            setSelectValue('analysisScope', profile.analysisScope);
-            setSelectValue('learningPeriod', profile.learningPeriod);
+            // DB 컬럼명이 변경되었으므로 필드 이름도 변경
+            setSelectValue('profileType', profile.profile_type || profile.profileType);
+            setSelectValue('analysisScope', profile.analysis_scope || profile.analysisScope);
+            setSelectValue('learningPeriod', profile.learning_period || profile.learningPeriod);
 
-            // 로그 소스 선택
-            if (profile.logSource) {
-                const logSourceRadio = document.getElementById(profile.logSource + 'Logs');
+            // 로그 소스 선택 (log_source_type 또는 logSourceType 사용)
+            const logSourceType = profile.log_source_type || profile.logSourceType;
+            console.log('로그 소스 타입:', logSourceType);
+
+            if (logSourceType) {
+                const logSourceRadio = document.querySelector(`input[name="logSource"][value="${logSourceType}"]`);
                 if (logSourceRadio) {
                     logSourceRadio.checked = true;
                     logSourceRadio.closest('.radio-item').classList.add('selected');
                     updateMetricsBasedOnLogSource();
+
+                    // 로그 소스 선택 후 충분한 시간이 지나야 메트릭 업데이트가 완료됨
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                } else {
+                    console.warn('로그 소스 라디오 버튼을 찾을 수 없습니다:', logSourceType);
                 }
             }
 
-            // 임계값 설정
-            setSelectValue('anomalyThreshold', getKeyByText('anomalyThreshold', profile.anomalyThreshold));
-            setSelectValue('alertSeverity', profile.alertSeverity);
+            // 데이터 필드에서 추가 정보 추출
+            const data = typeof profile.data === 'string' ? JSON.parse(profile.data || '{}') : (profile.data || {});
+            console.log('데이터 필드:', data);
 
-            const riskScoreSlider = document.getElementById('riskScore');
-            riskScoreSlider.value = profile.riskScore || 70;
-            document.getElementById('riskScoreValue').textContent = riskScoreSlider.value;
+            // 3단계: 메트릭 설정
+            // 메트릭 체크박스를 설정하기 전에 충분한 지연 시간을 줌
+            await new Promise(resolve => setTimeout(resolve, 800));
 
-            // 알림 설정
-            const alertCheckboxes = document.querySelectorAll('#content4 input[type="checkbox"]');
-            alertCheckboxes.forEach(checkbox => {
-                checkbox.checked = profile.alerts && profile.alerts.includes(checkbox.nextElementSibling.textContent);
-            });
+            // 선택된 메트릭 정보를 여러 가능한 소스에서 찾음
+            let selectedMetrics = [];
 
-            // 메트릭 설정 (약간 딜레이를 줘서 메트릭 업데이트가 완료된 후에 실행)
-            setTimeout(() => {
-                const metricCheckboxes = document.querySelectorAll('#content3 input[type="checkbox"]:not(:disabled)');
+            // data 객체 안에 있을 수 있는 여러 형태의 메트릭 데이터 확인
+            if (Array.isArray(data.selectedMetrics)) {
+                selectedMetrics = data.selectedMetrics;
+            } else if (Array.isArray(profile.selectedMetrics)) {
+                selectedMetrics = profile.selectedMetrics;
+            } else if (data.metrics && Array.isArray(data.metrics)) {
+                selectedMetrics = data.metrics;
+            } else if (profile.metrics && Array.isArray(profile.metrics)) {
+                selectedMetrics = profile.metrics;
+            }
+
+            console.log('적용할 선택된 메트릭:', selectedMetrics);
+
+            // 메트릭 체크박스 설정
+            if (selectedMetrics.length > 0) {
+                const metricCheckboxes = document.querySelectorAll('#content3 input[type="checkbox"]:not(#selectAllTime):not(#selectAllNetwork):not(#selectAllAccess)');
+
                 metricCheckboxes.forEach(checkbox => {
-                    checkbox.checked = profile.selectedMetrics &&
-                        profile.selectedMetrics.includes(checkbox.nextElementSibling.textContent);
+                    const metricLabel = checkbox.nextElementSibling.textContent.trim();
+                    const isSelected = selectedMetrics.some(metric =>
+                        metric === metricLabel ||
+                        metric.includes(metricLabel) ||
+                        metricLabel.includes(metric)
+                    );
+
+                    if (isSelected && !checkbox.disabled) {
+                        checkbox.checked = true;
+                        console.log('메트릭 체크됨:', metricLabel);
+                    }
                 });
-            }, 300);
+
+                // 각 카테고리별 전체 선택 체크박스 상태 업데이트
+                updateSelectAllCheckbox('timeMetricCard', 'selectAllTime');
+                updateSelectAllCheckbox('networkMetricCard', 'selectAllNetwork');
+                updateSelectAllCheckbox('accessMetricCard', 'selectAllAccess');
+
+                // 선택된 메트릭 수 업데이트
+                updateSelectedCount('time');
+                updateSelectedCount('network');
+                updateSelectedCount('access');
+            }
+
+            // 4단계: 임계값 설정
+            // anomalyThreshold 설정 - 텍스트 또는 값으로 설정
+            const anomalyThreshold = data.anomalyThreshold || profile.anomalyThreshold;
+            if (anomalyThreshold) {
+                if (['low', 'medium', 'high', 'custom'].includes(anomalyThreshold)) {
+                    setSelectValue('anomalyThreshold', anomalyThreshold);
+                } else {
+                    // 텍스트 값으로 검색
+                    const matchingOption = getKeyByText('anomalyThreshold', anomalyThreshold);
+                    if (matchingOption) {
+                        setSelectValue('anomalyThreshold', matchingOption);
+                    } else {
+                        console.warn('적절한 anomalyThreshold 값을 찾을 수 없습니다:', anomalyThreshold);
+                    }
+                }
+            }
+
+            // alertSeverity 설정
+            const alertSeverity = data.alertSeverity || profile.alertSeverity || 'medium';
+            setSelectValue('alertSeverity', alertSeverity);
+
+            // 위험 점수 설정
+            const riskScore = data.riskScore || profile.riskScore || profile.risk_score || 70;
+            document.getElementById('riskScore').value = riskScore;
+            document.getElementById('riskScoreValue').textContent = riskScore;
+
+            // 알림 설정 체크박스 설정
+            const alerts = data.alerts || profile.alerts || [];
+            console.log('알림 설정:', alerts);
+
+            if (alerts.length > 0) {
+                const alertCheckboxes = document.querySelectorAll('#content4 input[type="checkbox"]');
+                alertCheckboxes.forEach(checkbox => {
+                    const alertLabel = checkbox.nextElementSibling.textContent.trim();
+                    const isChecked = alerts.some(alert =>
+                        alert === alertLabel ||
+                        alert.includes(alertLabel) ||
+                        alertLabel.includes(alert)
+                    );
+
+                    checkbox.checked = isChecked;
+                });
+            } else {
+                // 기본값으로 이메일과 대시보드 알림 활성화
+                document.getElementById('emailAlert').checked = true;
+                document.getElementById('dashboardAlert').checked = true;
+            }
+
+            // 5단계: 요약 정보 업데이트
+            if (currentStep === totalSteps) {
+                updateSummary();
+            }
         }
 
         // 셀렉트 박스 값 설정 헬퍼 함수
@@ -1687,7 +1801,9 @@
             const select = document.getElementById(selectId);
             if (select && text) {
                 for (let i = 0; i < select.options.length; i++) {
-                    if (select.options[i].textContent === text) {
+                    if (select.options[i].textContent === text ||
+                        select.options[i].textContent.includes(text) ||
+                        text.includes(select.options[i].textContent)) {
                         return select.options[i].value;
                     }
                 }
@@ -1740,14 +1856,35 @@
             document.getElementById('riskScoreValue').textContent = this.value;
         });
 
+        // 스텝 이동 시 요약 정보 업데이트
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                if (validateStep(currentStep)) {
+                    currentStep++;
+                    showStep(currentStep);
+                    updateProgressBar();
+
+                    if (currentStep === totalSteps) {
+                        updateSummary();
+                    }
+                }
+            }
+        }
+
         // 초기화
         updateProgressBar();
         showStep(currentStep);
 
-        setTimeout(() => {
+        // 비동기 초기화 함수
+        async function initializeWizard() {
             setupLogSourceListeners();
             disableAllMetrics();
-            checkEditMode(); // 편집 모드 확인
+            await checkEditMode(); // 편집 모드 확인 (비동기)
+        }
+
+        // 초기화 실행
+        setTimeout(() => {
+            initializeWizard();
         }, 100);
 
         // 취소 버튼 추가

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UBA 프로파일 대시보드</title>
+    <script src="js/api.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -769,17 +770,23 @@
         // 뷰 타입 상태 관리 (기본값: card)
         let currentViewType = localStorage.getItem('ubaProfileViewType') || 'card';
 
-        // 로컬 스토리지에서 프로파일 목록 가져오기
-        function getProfiles() {
-            const profiles = localStorage.getItem('ubaProfiles');
-            return profiles ? JSON.parse(profiles) : [];
+        // 로컬 스토리지에서 프로파일 목록 가져오기 (API 호출로 변경)
+        async function getProfiles() {
+            try {
+                const profiles = await fetchProfiles();
+                console.log('프로필 목록 가져옴:', profiles);
+                return profiles || [];
+            } catch (error) {
+                console.error('프로필 목록 가져오기 실패:', error);
+                return [];
+            }
         }
 
-        // 프로파일 목록을 화면에 렌더링
-        function renderProfiles() {
+        // 프로파일 목록을 화면에 렌더링 (비동기로 변경)
+        async function renderProfiles() {
             const profileGrid = document.getElementById('profileGrid');
             const emptyState = document.getElementById('emptyState');
-            const profiles = getProfiles();
+            const profiles = await getProfiles();
 
             // 필터 적용
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
@@ -788,8 +795,11 @@
 
             const filteredProfiles = profiles.filter(profile => {
                 const nameMatch = profile.name.toLowerCase().includes(searchTerm);
-                const typeMatch = typeFilter === 'all' || profile.profileType === typeFilter;
-                const scopeMatch = scopeFilter === 'all' || profile.analysisScope === scopeFilter;
+                const profileType = profile.profile_type || profile.profileType; // DB 컬럼명 또는 클라이언트 속성명
+                const analysisScope = profile.analysis_scope || profile.analysisScope; // DB 컬럼명 또는 클라이언트 속성명
+
+                const typeMatch = typeFilter === 'all' || profileType === typeFilter;
+                const scopeMatch = scopeFilter === 'all' || analysisScope === scopeFilter;
 
                 return nameMatch && typeMatch && scopeMatch;
             });
@@ -825,9 +835,20 @@
             container.className = 'profile-grid card-view';
 
             container.innerHTML = profiles.map(profile => {
+                // DB에서 가져온 필드명과 이전 클라이언트 코드 필드명 둘 다 지원
+                const profileType = profile.profile_type || profile.profileType || 'user';
+                const analysisScope = profile.analysis_scope || profile.analysisScope || 'global';
+                const logSourceName = profile.log_source_name || profile.logSourceName || '-';
+                const learningPeriod = profile.learning_period || profile.learningPeriod || '-';
+                const createdAt = profile.created_at || profile.createdAt;
+
+                // data 필드에서 추가 정보 추출
+                const data = profile.data || {};
+                const selectedMetrics = data.selectedMetrics || profile.selectedMetrics || [];
+
                 // 프로파일 유형 표시 텍스트 변환
                 let profileTypeText;
-                switch (profile.profileType) {
+                switch (profileType) {
                     case 'user': profileTypeText = '사용자'; break;
                     case 'entity': profileTypeText = '엔터티'; break;
                     case 'hybrid': profileTypeText = '하이브리드'; break;
@@ -836,7 +857,7 @@
 
                 // 분석 범위 표시 텍스트 변환
                 let scopeText;
-                switch (profile.analysisScope) {
+                switch (analysisScope) {
                     case 'department': scopeText = '부서별'; break;
                     case 'role': scopeText = '역할별'; break;
                     case 'global': scopeText = '전체 조직'; break;
@@ -844,21 +865,18 @@
                     default: scopeText = '-';
                 }
 
-                // 로그 소스 정보
-                const logSourceName = profile.logSourceName || '-';
-
                 // 선택된 메트릭 태그 (최대 3개까지만 표시)
-                const metricTags = profile.selectedMetrics
-                    ? profile.selectedMetrics.slice(0, 3).map(metric => `<span class="metric-tag">${metric}</span>`).join('')
+                const metricTags = selectedMetrics
+                    ? selectedMetrics.slice(0, 3).map(metric => `<span class="metric-tag">${metric}</span>`).join('')
                     : '';
 
-                const moreMetrics = profile.selectedMetrics && profile.selectedMetrics.length > 3
-                    ? `<span class="metric-tag">+${profile.selectedMetrics.length - 3}개 더</span>`
+                const moreMetrics = selectedMetrics && selectedMetrics.length > 3
+                    ? `<span class="metric-tag">+${selectedMetrics.length - 3}개 더</span>`
                     : '';
 
                 // 생성일 표시 (ISO 형식 날짜를 한국 형식으로 변환)
-                const createdDate = profile.createdAt
-                    ? new Date(profile.createdAt).toLocaleDateString('ko-KR', {
+                const createdDate = createdAt
+                    ? new Date(createdAt).toLocaleDateString('ko-KR', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
@@ -903,7 +921,7 @@
                             </div>
                             <div class="info-row">
                                 <div class="info-label">학습 기간:</div>
-                                <div class="info-value">${profile.learningPeriod || '-'}일</div>
+                                <div class="info-value">${learningPeriod}일</div>
                             </div>
                             <div class="info-row">
                                 <div class="info-label">분석 메트릭:</div>
@@ -923,24 +941,31 @@
             container.className = 'profile-grid list-view';
 
             container.innerHTML = profiles.map(profile => {
+                // DB에서 가져온 필드명과 이전 클라이언트 코드 필드명 둘 다 지원
+                const profileType = profile.profile_type || profile.profileType || 'user';
+                const analysisScope = profile.analysis_scope || profile.analysisScope || 'global';
+                const logSourceName = profile.log_source_name || profile.logSourceName || '-';
+                const createdAt = profile.created_at || profile.createdAt;
+
+                // data 필드에서 추가 정보 추출
+                const data = profile.data || {};
+                const selectedMetrics = data.selectedMetrics || profile.selectedMetrics || [];
+
                 // 프로파일 유형 표시 텍스트 변환
                 let profileTypeText;
-                switch (profile.profileType) {
+                switch (profileType) {
                     case 'user': profileTypeText = '사용자'; break;
                     case 'entity': profileTypeText = '엔터티'; break;
                     case 'hybrid': profileTypeText = '하이브리드'; break;
                     default: profileTypeText = '사용자 정의';
                 }
 
-                // 로그 소스 정보
-                const logSourceName = profile.logSourceName || '-';
-
                 // 메트릭 개수
-                const metricCount = profile.selectedMetrics ? profile.selectedMetrics.length : 0;
+                const metricCount = selectedMetrics ? selectedMetrics.length : 0;
 
                 // 생성일 표시 (ISO 형식 날짜를 한국 형식으로 변환)
-                const createdDate = profile.createdAt
-                    ? new Date(profile.createdAt).toLocaleDateString('ko-KR', {
+                const createdDate = createdAt
+                    ? new Date(createdAt).toLocaleDateString('ko-KR', {
                         year: 'numeric',
                         month: 'numeric',
                         day: 'numeric'
@@ -958,7 +983,7 @@
                                 <div class="list-item-description">
                                     <span>📊 ${logSourceName}</span>
                                     <span>📈 메트릭 ${metricCount}개</span>
-                                    <span>⏱️ 학습기간 ${profile.learningPeriod || '-'}일</span>
+                                    <span>⏱️ 학습기간 ${learningPeriod}일</span>
                                 </div>
                                 <div class="list-item-meta">생성일: ${createdDate}</div>
                             </div>
@@ -983,8 +1008,8 @@
         }
 
         // 필터링 함수
-        function filterProfiles() {
-            renderProfiles();
+        async function filterProfiles() {
+            await renderProfiles();
         }
 
         // 뷰 타입 변경 함수
@@ -1003,115 +1028,140 @@
         }
 
         // 프로파일 상세 정보 보기
-        function viewProfileDetails(profileId) {
-            const profiles = getProfiles();
-            const profile = profiles.find(p => p.id === profileId);
+        async function viewProfileDetails(profileId) {
+            try {
+                const profiles = await getProfiles();
+                console.log('상세 정보 조회 - 모든 프로필:', profiles);
+                const profile = profiles.find(p => p.id === profileId);
+                console.log('상세 정보 조회 - 선택된 프로필:', profile);
 
-            if (!profile) return;
+                if (!profile) {
+                    console.error('프로필을 찾을 수 없음:', profileId);
+                    alert('프로필 정보를 찾을 수 없습니다.');
+                    return;
+                }
 
-            const modal = document.getElementById('detailsModal');
-            const detailsContent = document.getElementById('detailsContent');
+                const modal = document.getElementById('detailsModal');
+                const detailsContent = document.getElementById('detailsContent');
 
-            // 프로파일 유형 표시 텍스트 변환
-            let profileTypeText;
-            switch (profile.profileType) {
-                case 'user': profileTypeText = '사용자'; break;
-                case 'entity': profileTypeText = '엔터티'; break;
-                case 'hybrid': profileTypeText = '하이브리드'; break;
-                default: profileTypeText = '사용자 정의';
+                // DB에서 가져온 필드명과 이전 클라이언트 코드 필드명 둘 다 지원
+                const profileType = profile.profile_type || profile.profileType || 'user';
+                const analysisScope = profile.analysis_scope || profile.analysisScope || 'global';
+                const logSourceName = profile.log_source_name || profile.logSourceName || '-';
+                const learningPeriod = profile.learning_period || profile.learningPeriod || '-';
+                const createdAt = profile.created_at || profile.createdAt;
+
+                // data 필드에서 추가 정보 추출
+                const data = profile.data || {};
+                const selectedMetrics = data.selectedMetrics || profile.selectedMetrics || [];
+                const anomalyThreshold = data.anomalyThreshold || profile.anomalyThreshold || '-';
+                const riskScore = data.riskScore || profile.riskScore || '-';
+                const alerts = data.alerts || profile.alerts || [];
+
+                // 프로파일 유형 표시 텍스트 변환
+                let profileTypeText;
+                switch (profileType) {
+                    case 'user': profileTypeText = '사용자'; break;
+                    case 'entity': profileTypeText = '엔터티'; break;
+                    case 'hybrid': profileTypeText = '하이브리드'; break;
+                    default: profileTypeText = '사용자 정의';
+                }
+
+                // 분석 범위 표시 텍스트 변환
+                let scopeText;
+                switch (analysisScope) {
+                    case 'department': scopeText = '부서별'; break;
+                    case 'role': scopeText = '역할별'; break;
+                    case 'global': scopeText = '전체 조직'; break;
+                    case 'custom': scopeText = '사용자 정의'; break;
+                    default: scopeText = '-';
+                }
+
+                // 알림 설정 표시
+                const alertsDisplay = alerts.length > 0 ? alerts.map(alert => `<span class="metric-tag">${alert}</span>`).join('') : '없음';
+
+                // 메트릭 표시 (모두 표시)
+                const metricsDisplay = selectedMetrics.length > 0
+                    ? selectedMetrics.map(metric => `<span class="metric-tag">${metric}</span>`).join('')
+                    : '없음';
+
+                // 생성일 표시 (ISO 형식 날짜를 한국 형식으로 변환)
+                const createdDate = createdAt
+                    ? new Date(createdAt).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    })
+                    : '-';
+
+                detailsContent.innerHTML = `
+                    <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">${profile.name}</h3>
+
+                    <p style="color: #94a3b8; margin-bottom: 1.5rem;">${profile.description || '설명 없음'}</p>
+
+                    <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
+                        <h4 style="margin-bottom: 0.75rem; color: #6366f1;">기본 정보</h4>
+                        <div class="info-row">
+                            <div class="info-label">프로파일 유형:</div>
+                            <div class="info-value">${profileTypeText}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">분석 범위:</div>
+                            <div class="info-value">${scopeText}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">생성일:</div>
+                            <div class="info-value">${createdDate}</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
+                        <h4 style="margin-bottom: 0.75rem; color: #6366f1;">데이터 소스</h4>
+                        <div class="info-row">
+                            <div class="info-label">로그 소스:</div>
+                            <div class="info-value">${logSourceName}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">학습 기간:</div>
+                            <div class="info-value">${learningPeriod}일</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
+                        <h4 style="margin-bottom: 0.75rem; color: #6366f1;">분석 메트릭</h4>
+                        <div style="margin-top: 0.5rem;">${metricsDisplay}</div>
+                    </div>
+
+                    <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem;">
+                        <h4 style="margin-bottom: 0.75rem; color: #6366f1;">임계값 설정</h4>
+                        <div class="info-row">
+                            <div class="info-label">민감도:</div>
+                            <div class="info-value">${anomalyThreshold}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">위험 점수:</div>
+                            <div class="info-value">${riskScore}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">알림 설정:</div>
+                        </div>
+                        <div style="margin-top: 0.5rem;">${alertsDisplay}</div>
+                    </div>
+                `;
+
+                const footerDiv = modal.querySelector('.modal-footer');
+                footerDiv.innerHTML = `
+                    <button class="btn btn-secondary" onclick="closeDetailsModal()">닫기</button>
+                    <button class="btn btn-primary" onclick="viewProfileResults('${profile.id}')">분석 결과 보기</button>
+                `;
+
+                modal.classList.add('active');
+            } catch (error) {
+                console.error('프로필 상세정보 로드 실패:', error);
+                alert('프로필 정보를 로드하는 중 오류가 발생했습니다.');
             }
-
-            // 분석 범위 표시 텍스트 변환
-            let scopeText;
-            switch (profile.analysisScope) {
-                case 'department': scopeText = '부서별'; break;
-                case 'role': scopeText = '역할별'; break;
-                case 'global': scopeText = '전체 조직'; break;
-                case 'custom': scopeText = '사용자 정의'; break;
-                default: scopeText = '-';
-            }
-
-            // 알림 설정 표시
-            const alerts = profile.alerts ? profile.alerts.map(alert => `<span class="metric-tag">${alert}</span>`).join('') : '없음';
-
-            // 메트릭 표시 (모두 표시)
-            const metrics = profile.selectedMetrics
-                ? profile.selectedMetrics.map(metric => `<span class="metric-tag">${metric}</span>`).join('')
-                : '없음';
-
-            // 생성일 표시 (ISO 형식 날짜를 한국 형식으로 변환)
-            const createdDate = profile.createdAt
-                ? new Date(profile.createdAt).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })
-                : '-';
-
-            detailsContent.innerHTML = `
-                <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">${profile.name}</h3>
-
-                <p style="color: #94a3b8; margin-bottom: 1.5rem;">${profile.description || '설명 없음'}</p>
-
-                <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="margin-bottom: 0.75rem; color: #6366f1;">기본 정보</h4>
-                    <div class="info-row">
-                        <div class="info-label">프로파일 유형:</div>
-                        <div class="info-value">${profileTypeText}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">분석 범위:</div>
-                        <div class="info-value">${scopeText}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">생성일:</div>
-                        <div class="info-value">${createdDate}</div>
-                    </div>
-                </div>
-
-                <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="margin-bottom: 0.75rem; color: #6366f1;">데이터 소스</h4>
-                    <div class="info-row">
-                        <div class="info-label">로그 소스:</div>
-                        <div class="info-value">${profile.logSourceName || '-'}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">학습 기간:</div>
-                        <div class="info-value">${profile.learningPeriod || '-'}일</div>
-                    </div>
-                </div>
-
-                <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
-                    <h4 style="margin-bottom: 0.75rem; color: #6366f1;">분석 메트릭</h4>
-                    <div style="margin-top: 0.5rem;">${metrics}</div>
-                </div>
-
-                <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem;">
-                    <h4 style="margin-bottom: 0.75rem; color: #6366f1;">임계값 설정</h4>
-                    <div class="info-row">
-                        <div class="info-label">민감도:</div>
-                        <div class="info-value">${profile.anomalyThreshold || '-'}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">위험 점수:</div>
-                        <div class="info-value">${profile.riskScore || '-'}</div>
-                    </div>
-                    <div class="info-row">
-                        <div class="info-label">알림 설정:</div>
-                    </div>
-                    <div style="margin-top: 0.5rem;">${alerts}</div>
-                </div>
-            `;
-
-            const footerDiv = modal.querySelector('.modal-footer');
-            footerDiv.innerHTML = `
-                <button class="btn btn-secondary" onclick="closeDetailsModal()">닫기</button>
-                <button class="btn btn-primary" onclick="viewProfileResults('${profile.id}')">분석 결과 보기</button>
-            `;
-
-            modal.classList.add('active');
         }
 
         // 프로파일 편집
@@ -1150,12 +1200,11 @@
         }
 
         // 프로파일 삭제
-        function deleteProfile(profileId) {
-            let profiles = getProfiles();
-            profiles = profiles.filter(profile => profile.id !== profileId);
-
-            localStorage.setItem('ubaProfiles', JSON.stringify(profiles));
-            renderProfiles();
+        async function deleteProfile(profileId) {
+            const result = await deleteProfileCompat(profileId);
+            if (result) {
+                await renderProfiles();
+            }
         }
 
         // 마법사 모달 열기
