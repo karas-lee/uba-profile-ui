@@ -6,18 +6,19 @@
     <title>UBA 프로파일 통합 관리</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
             font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
             color: #e2e8f0;
             min-height: 100vh;
+            font-size: 0.9rem; /* 기본 폰트 크기 축소 */
         }
 
         .dashboard-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 1rem; /* 패딩 축소 */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -27,35 +28,36 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
+            margin-bottom: 1.5rem; /* 마진 축소 */
+            padding-bottom: 0.75rem; /* 패딩 축소 */
             border-bottom: 1px solid rgba(51, 65, 85, 0.3);
         }
 
         .header-title h1 {
-            font-size: 2.5rem;
+            font-size: 2rem; /* 제목 크기 축소 */
             font-weight: 700;
             background: linear-gradient(135deg, #6366f1, #8b5cf6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem; /* 마진 축소 */
         }
 
         .header-title p {
             color: #94a3b8;
-            font-size: 1.1rem;
+            font-size: 0.95rem; /* 크기 축소 */
         }
 
         .nav {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            gap: 0.75rem; /* 간격 축소 */
+            margin-bottom: 1rem; /* 마진 축소 */
         }
 
         .nav-item {
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
+            padding: 0.5rem 1.25rem; /* 패딩 축소 */
+            border-radius: 0.4rem; /* 둥글기 축소 */
             font-weight: 600;
+            font-size: 0.9rem; /* 폰트 크기 축소 */
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
@@ -74,10 +76,10 @@
         }
 
         .btn {
-            padding: 0.75rem 1.5rem;
+            padding: 0.5rem 1.25rem; /* 패딩 축소 */
             border: none;
-            border-radius: 0.5rem;
-            font-size: 1rem;
+            border-radius: 0.4rem; /* 둥글기 축소 */
+            font-size: 0.9rem; /* 폰트 크기 축소 */
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -93,8 +95,8 @@
 
         .btn-primary:hover {
             background: linear-gradient(135deg, #5856eb, #7c3aed);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+            transform: translateY(-1px); /* 변화량 축소 */
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3); /* 그림자 축소 */
         }
 
         .btn-secondary {
@@ -105,7 +107,7 @@
 
         .btn-secondary:hover {
             background: rgba(51, 65, 85, 0.9);
-            transform: translateY(-2px);
+            transform: translateY(-1px); /* 변화량 축소 */
         }
 
         .btn-danger {
@@ -115,7 +117,7 @@
 
         .btn-danger:hover {
             background: rgba(239, 68, 68, 0.9);
-            transform: translateY(-2px);
+            transform: translateY(-1px); /* 변화량 축소 */
         }
 
         .btn-success {
@@ -125,25 +127,25 @@
 
         .btn-success:hover {
             background: rgba(16, 185, 129, 0.9);
-            transform: translateY(-2px);
+            transform: translateY(-1px); /* 변화량 축소 */
         }
 
         .btn-group {
             display: flex;
-            gap: 0.75rem;
+            gap: 0.5rem; /* 간격 축소 */
         }
 
         .status-card-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* 너비 축소 */
+            gap: 0.75rem; /* 간격 축소 */
+            margin-bottom: 1.5rem; /* 마진 축소 */
         }
 
         .status-card {
             background: rgba(30, 41, 59, 0.7);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
+            border-radius: 0.6rem; /* 둥글기 축소 */
+            padding: 1.25rem; /* 패딩 축소 */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -152,25 +154,25 @@
         }
 
         .status-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: translateY(-3px); /* 변화량 축소 */
+            box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.1), 0 8px 8px -5px rgba(0, 0, 0, 0.04); /* 그림자 축소 */
         }
 
         .status-card-title {
-            font-size: 0.9rem;
+            font-size: 0.85rem; /* 크기 축소 */
             color: #94a3b8;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem; /* 마진 축소 */
         }
 
         .status-card-value {
-            font-size: 2.5rem;
+            font-size: 2rem; /* 크기 축소 */
             font-weight: 700;
             color: #e2e8f0;
         }
 
         .status-card.running {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.2));
-            border-left: 4px solid #10b981;
+            border-left: 3px solid #10b981; /* 테두리 축소 */
         }
 
         .status-card.running .status-card-value {
@@ -179,7 +181,7 @@
 
         .status-card.waiting {
             background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.2));
-            border-left: 4px solid #f59e0b;
+            border-left: 3px solid #f59e0b; /* 테두리 축소 */
         }
 
         .status-card.waiting .status-card-value {
@@ -188,7 +190,7 @@
 
         .status-card.stopped {
             background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.2));
-            border-left: 4px solid #ef4444;
+            border-left: 3px solid #ef4444; /* 테두리 축소 */
         }
 
         .status-card.stopped .status-card-value {
@@ -197,7 +199,7 @@
 
         .status-card.paused {
             background: linear-gradient(135deg, rgba(107, 114, 128, 0.1), rgba(107, 114, 128, 0.2));
-            border-left: 4px solid #6b7280;
+            border-left: 3px solid #6b7280;
         }
 
         .status-card.paused .status-card-value {
@@ -206,43 +208,59 @@
 
         .action-section {
             background: rgba(30, 41, 59, 0.7);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            border-radius: 0.6rem; /* 둥글기 축소 */
+            padding: 1.25rem; /* 패딩 축소 */
+            margin-bottom: 1.5rem; /* 마진 축소 */
         }
 
         .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem; /* 마진 축소 */
         }
 
         .section-title {
-            font-size: 1.25rem;
+            font-size: 1.25rem; /* 제목 크기 키움 */
             font-weight: 600;
             color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            font-size: 1.4rem;
+        }
+
+        .action-section .section-title::before {
+            content: "⚙️";
+        }
+
+        .history-section .section-title::before {
+            content: "📋";
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem; /* 마진 축소 */
         }
 
         th {
             text-align: left;
-            padding: 1rem;
+            padding: 0.7rem; /* 패딩 축소 */
             background: rgba(15, 23, 42, 0.5);
             color: #94a3b8;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.85rem; /* 크기 축소 */
         }
 
         td {
-            padding: 1rem;
+            padding: 0.7rem; /* 패딩 축소 */
             border-bottom: 1px solid rgba(51, 65, 85, 0.3);
             color: #e2e8f0;
+            font-size: 0.85rem; /* 크기 축소 */
         }
 
         tr:hover td {
@@ -250,18 +268,18 @@
         }
 
         .checkbox-cell {
-            width: 40px;
+            width: 30px; /* 너비 축소 */
         }
 
         .actions-cell {
-            width: 150px;
+            width: 130px; /* 너비 축소 */
         }
 
         .status-badge {
             display: inline-block;
-            padding: 0.25rem 0.75rem;
+            padding: 0.2rem 0.6rem; /* 패딩 축소 */
             border-radius: 9999px;
-            font-size: 0.75rem;
+            font-size: 0.7rem; /* 크기 축소 */
             font-weight: 500;
         }
 
@@ -288,16 +306,16 @@
         .action-btn {
             background: rgba(51, 65, 85, 0.5);
             border: none;
-            border-radius: 0.375rem;
-            width: 32px;
-            height: 32px;
+            border-radius: 0.3rem; /* 둥글기 축소 */
+            width: 28px; /* 크기 축소 */
+            height: 28px; /* 크기 축소 */
             display: inline-flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
             color: #94a3b8;
-            margin-right: 0.25rem;
+            margin-right: 0.2rem; /* 마진 축소 */
         }
 
         .action-btn:hover {
@@ -322,30 +340,31 @@
 
         .baseline-section {
             background: rgba(30, 41, 59, 0.7);
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            border-radius: 0.6rem; /* 둥글기 축소 */
+            padding: 1.25rem; /* 패딩 축소 */
+            margin-bottom: 1.5rem; /* 마진 축소 */
         }
 
         .form-group {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 1rem;
+            gap: 0.75rem; /* 간격 축소 */
+            margin-bottom: 0.75rem; /* 마진 축소 */
         }
 
         .form-group label {
-            width: 120px;
+            width: 100px; /* 너비 축소 */
             color: #94a3b8;
+            font-size: 0.85rem; /* 크기 축소 */
         }
 
         .form-control {
             background: rgba(15, 23, 42, 0.8);
             border: 1px solid rgba(51, 65, 85, 0.5);
-            border-radius: 0.5rem;
+            border-radius: 0.4rem; /* 둥글기 축소 */
             color: #e2e8f0;
-            padding: 0.5rem 0.75rem;
-            font-size: 0.9rem;
+            padding: 0.4rem 0.6rem; /* 패딩 축소 */
+            font-size: 0.85rem; /* 크기 축소 */
         }
 
         .modal-overlay {
@@ -371,12 +390,12 @@
 
         .modal-container {
             background: #1a2332;
-            border-radius: 1rem;
+            border-radius: 0.75rem; /* 둥글기 축소 */
             width: 90%;
             max-width: 500px;
             max-height: 90vh;
             overflow-y: auto;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.25); /* 그림자 축소 */
             transform: scale(0.9);
             transition: transform 0.3s ease;
         }
@@ -389,12 +408,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1.5rem;
+            padding: 1.25rem; /* 패딩 축소 */
             border-bottom: 1px solid rgba(51, 65, 85, 0.3);
         }
 
         .modal-header h2 {
-            font-size: 1.5rem;
+            font-size: 1.3rem; /* 크기 축소 */
             color: #f1f5f9;
             margin: 0;
         }
@@ -402,40 +421,199 @@
         .modal-close {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 1.3rem; /* 크기 축소 */
             color: #94a3b8;
             cursor: pointer;
         }
 
         .modal-body {
-            padding: 1.5rem;
+            padding: 1.25rem; /* 패딩 축소 */
         }
 
         .modal-footer {
-            padding: 1.5rem;
+            padding: 1.25rem; /* 패딩 축소 */
             border-top: 1px solid rgba(51, 65, 85, 0.3);
             display: flex;
             justify-content: flex-end;
-            gap: 1rem;
+            gap: 0.75rem; /* 간격 축소 */
         }
 
         @media (max-width: 768px) {
             .status-card-container {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr 1fr;
             }
-            
+
             .form-group {
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
+
             .form-group label {
-                margin-bottom: 0.5rem;
+                margin-bottom: 0.3rem; /* 마진 축소 */
             }
-            
+
             .nav {
                 flex-wrap: wrap;
             }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .btn-group {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            /* 테이블 반응형 */
+            .history-table, #profileTable {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
+
+        /* 작은 모바일 화면 */
+        @media (max-width: 480px) {
+            .status-card-container {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+
+        /* 실행 이력 스타일 */
+        .history-section {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 0.6rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+        }
+
+        .history-table th {
+            text-align: left;
+            padding: 0.7rem;
+            color: #94a3b8;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .history-table td {
+            padding: 0.7rem;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+            font-size: 0.85rem;
+        }
+
+        .history-table tbody tr {
+            transition: background 0.2s ease;
+        }
+
+        .history-table tbody tr:hover {
+            background: rgba(51, 65, 85, 0.2);
+        }
+
+        .history-table tbody tr.selected {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid #6366f1;
+        }
+
+        .run-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .run-status.success {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .run-status.failed {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .run-status.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .run-status.running {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+        }
+
+        /* 네비게이션 버튼 스타일 업데이트 */
+        .nav-item {
+            padding: 0.5rem 1.25rem;
+            border-radius: 0.4rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: #94a3b8;
+        }
+
+        .nav-item:hover {
+            background: rgba(51, 65, 85, 0.3);
+            color: #e2e8f0;
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            border-left: 3px solid #6366f1;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        /* 섹션 헤더 강화 및 통일 */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        /* 섹션 간 구분선 추가 */
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.3), rgba(99, 102, 241, 0.1));
+            margin: 1.5rem 0;
+        }
+
+        /* 섹션 배경 통일 */
+        .action-section, .history-section {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 0.6rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem; /* 간격 조정 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
     </style>
 </head>
@@ -449,12 +627,6 @@
             <button class="btn btn-primary" onclick="window.location.href='index.html'">
                 ← 대시보드로 돌아가기
             </button>
-        </div>
-
-        <div class="nav">
-            <a href="uba_integrated_management.html" class="nav-item active">실행 관리</a>
-            <a href="uba_execution_history.html" class="nav-item">실행 이력</a>
-            <a href="uba_system_health.html" class="nav-item">시스템 상태</a>
         </div>
 
         <div class="status-card-container">
@@ -478,7 +650,7 @@
 
         <div class="action-section">
             <div class="section-header">
-                <div class="section-title">일괄 제어</div>
+                <div class="section-title">프로파일 실행 관리</div>
                 <div class="btn-group">
                     <button class="btn btn-success" id="startAllBtn">일괄 실행</button>
                     <button class="btn btn-secondary" id="pauseAllBtn">일괄 일시정지</button>
@@ -579,83 +751,85 @@
             </div>
         </div>
 
-        <div class="baseline-section">
+        <!-- 섹션 구분선 추가 -->
+        <div class="section-divider"></div>
+
+        <div class="history-section">
             <div class="section-header">
-                <div class="section-title">공통 베이스라인 관리</div>
-            </div>
-            <div class="form-group">
-                <label for="learningPeriod">학습 기간:</label>
-                <select id="learningPeriod" class="form-control">
-                    <option value="7">7일</option>
-                    <option value="14">14일</option>
-                    <option value="30" selected>30일</option>
-                    <option value="60">60일</option>
-                    <option value="90">90일</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="dataSource">데이터 소스:</label>
-                <select id="dataSource" class="form-control">
-                    <option value="all" selected>전체</option>
-                    <option value="windows">Windows 이벤트 로그</option>
-                    <option value="ad">Active Directory</option>
-                    <option value="firewall">방화벽 로그</option>
-                    <option value="proxy">프록시/웹 로그</option>
-                    <option value="vpn">VPN 로그</option>
-                    <option value="dns">DNS 로그</option>
-                    <option value="email">이메일 로그</option>
-                    <option value="database">데이터베이스 로그</option>
-                </select>
-            </div>
-            <div class="form-group">
+                <div class="section-title">실행 이력</div>
                 <div class="btn-group">
-                    <button class="btn btn-primary">선택 항목 재학습</button>
+                    <button class="btn btn-secondary" id="refreshHistoryBtn">새로고침</button>
+                    <button class="btn btn-primary" id="compareBtn">선택 항목 비교</button>
                 </div>
+            </div>
+            <table class="history-table" id="historyTable">
+                <thead>
+                    <tr>
+                        <th class="checkbox-cell">
+                            <input type="checkbox" id="selectAllHistory">
+                        </th>
+                        <th>실행 ID</th>
+                        <th>프로파일 이름</th>
+                        <th>시작 시간</th>
+                        <th>종료 시간</th>
+                        <th>상태</th>
+                        <th>이상 점수</th>
+                        <th class="actions-cell">액션</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- 실행 이력 데이터는 JavaScript로 채워짐 -->
+                </tbody>
+            </table>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" id="prevPage">이전</button>
+                <span id="pageInfo" style="margin: 0 1rem; color: #94a3b8;">1 / 1</span>
+                <button class="btn btn-secondary" id="nextPage">다음</button>
             </div>
         </div>
+    </div>
 
-        <!-- 스케줄링 모달 -->
-        <div id="scheduleModal" class="modal-overlay">
-            <div class="modal-container">
-                <div class="modal-header">
-                    <h2>스케줄 설정</h2>
-                    <button class="modal-close" onclick="closeScheduleModal()">&times;</button>
+    <!-- 스케줄링 모달 -->
+    <div id="scheduleModal" class="modal-overlay">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h2>스케줄 설정</h2>
+                <button class="modal-close" onclick="closeScheduleModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="scheduleType">실행 주기:</label>
+                    <select id="scheduleType" class="form-control">
+                        <option value="once">1회</option>
+                        <option value="daily" selected>매일</option>
+                        <option value="weekly">매주</option>
+                        <option value="monthly">매월</option>
+                    </select>
                 </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="scheduleType">실행 주기:</label>
-                        <select id="scheduleType" class="form-control">
-                            <option value="once">1회</option>
-                            <option value="daily" selected>매일</option>
-                            <option value="weekly">매주</option>
-                            <option value="monthly">매월</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="weekdaySelector" style="display: none;">
-                        <label>요일 선택:</label>
-                        <div style="display: flex; gap: 0.5rem;">
-                            <label><input type="checkbox" value="mon"> 월</label>
-                            <label><input type="checkbox" value="tue"> 화</label>
-                            <label><input type="checkbox" value="wed"> 수</label>
-                            <label><input type="checkbox" value="thu"> 목</label>
-                            <label><input type="checkbox" value="fri"> 금</label>
-                            <label><input type="checkbox" value="sat"> 토</label>
-                            <label><input type="checkbox" value="sun"> 일</label>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="scheduleTime">실행 시간:</label>
-                        <input type="time" id="scheduleTime" class="form-control" value="00:00">
-                    </div>
-                    <div class="form-group" id="dateSelector">
-                        <label for="scheduleDate">실행 일자:</label>
-                        <input type="date" id="scheduleDate" class="form-control">
+                <div class="form-group" id="weekdaySelector" style="display: none;">
+                    <label>요일 선택:</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <label><input type="checkbox" value="mon"> 월</label>
+                        <label><input type="checkbox" value="tue"> 화</label>
+                        <label><input type="checkbox" value="wed"> 수</label>
+                        <label><input type="checkbox" value="thu"> 목</label>
+                        <label><input type="checkbox" value="fri"> 금</label>
+                        <label><input type="checkbox" value="sat"> 토</label>
+                        <label><input type="checkbox" value="sun"> 일</label>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="closeScheduleModal()">취소</button>
-                    <button class="btn btn-primary" id="applyScheduleBtn">적용</button>
+                <div class="form-group">
+                    <label for="scheduleTime">실행 시간:</label>
+                    <input type="time" id="scheduleTime" class="form-control" value="00:00">
                 </div>
+                <div class="form-group" id="dateSelector">
+                    <label for="scheduleDate">실행 일자:</label>
+                    <input type="date" id="scheduleDate" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeScheduleModal()">취소</button>
+                <button class="btn btn-primary" id="applyScheduleBtn">적용</button>
             </div>
         </div>
     </div>
@@ -672,7 +846,7 @@
             // 로컬 스토리지에서 상태 정보 가져오기
             const statusMap = localStorage.getItem('profileStatusMap');
             const statusData = statusMap ? JSON.parse(statusMap) : {};
-            
+
             // 상태가 없으면 기본값으로 '중지됨' 반환
             return statusData[profileId] || {
                 status: 'stopped', // stopped, running, waiting, paused
@@ -686,11 +860,11 @@
         function getAllProfileStatuses() {
             const profiles = getProfiles();
             const result = {};
-            
+
             profiles.forEach(profile => {
                 result[profile.id] = getProfileStatus(profile.id);
             });
-            
+
             return result;
         }
 
@@ -698,9 +872,9 @@
         function saveProfileStatus(profileId, statusData) {
             const statusMap = localStorage.getItem('profileStatusMap');
             const allStatusData = statusMap ? JSON.parse(statusMap) : {};
-            
+
             allStatusData[profileId] = statusData;
-            
+
             localStorage.setItem('profileStatusMap', JSON.stringify(allStatusData));
         }
 
@@ -710,7 +884,7 @@
             status.status = 'running';
             status.lastRun = new Date().toISOString();
             status.nextRun = null;
-            
+
             saveProfileStatus(profileId, status);
             renderProfiles(); // 화면 갱신
             updateStatusCounts(); // 상태 카운트 갱신
@@ -720,7 +894,7 @@
         function pauseProfile(profileId) {
             const status = getProfileStatus(profileId);
             status.status = 'paused';
-            
+
             saveProfileStatus(profileId, status);
             renderProfiles();
             updateStatusCounts();
@@ -730,7 +904,7 @@
         function stopProfile(profileId) {
             const status = getProfileStatus(profileId);
             status.status = 'stopped';
-            
+
             saveProfileStatus(profileId, status);
             renderProfiles();
             updateStatusCounts();
@@ -741,7 +915,7 @@
             const status = getProfileStatus(profileId);
             status.status = 'waiting';
             status.nextRun = scheduleTime;
-            
+
             saveProfileStatus(profileId, status);
             renderProfiles();
             updateStatusCounts();
@@ -756,11 +930,11 @@
                 paused: 0,
                 stopped: 0
             };
-            
+
             Object.values(statuses).forEach(status => {
                 counts[status.status]++;
             });
-            
+
             document.querySelector('.status-card.running .status-card-value').textContent = counts.running;
             document.querySelector('.status-card.waiting .status-card-value').textContent = counts.waiting;
             document.querySelector('.status-card.paused .status-card-value').textContent = counts.paused;
@@ -771,7 +945,7 @@
         function renderProfiles() {
             const tableBody = document.querySelector('#profileTable tbody');
             const profiles = getProfiles();
-            
+
             if (profiles.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
@@ -782,10 +956,10 @@
                 `;
                 return;
             }
-            
+
             tableBody.innerHTML = profiles.map(profile => {
                 const status = getProfileStatus(profile.id);
-                
+
                 // 상태에 따른 배지 스타일
                 let statusBadgeClass = '';
                 let statusText = '';
@@ -807,9 +981,9 @@
                         statusText = '중지됨';
                         break;
                 }
-                
+
                 // 마지막 실행 시간
-                const lastRun = status.lastRun 
+                const lastRun = status.lastRun
                     ? new Date(status.lastRun).toLocaleString('ko-KR', {
                         year: 'numeric',
                         month: '2-digit',
@@ -818,9 +992,9 @@
                         minute: '2-digit'
                       })
                     : '-';
-                
+
                 // 다음 예약 시간
-                const nextRun = status.nextRun 
+                const nextRun = status.nextRun
                     ? new Date(status.nextRun).toLocaleString('ko-KR', {
                         year: 'numeric',
                         month: '2-digit',
@@ -829,7 +1003,7 @@
                         minute: '2-digit'
                       })
                     : (status.status === 'running' ? '상시 실행' : '-');
-                
+
                 // 우선순위 텍스트
                 let priorityText = '';
                 switch (status.priority) {
@@ -837,7 +1011,7 @@
                     case 'medium': priorityText = '중간'; break;
                     case 'low': priorityText = '낮음'; break;
                 }
-                
+
                 // 액션 버튼 생성
                 let actionButtons = '';
                 if (status.status === 'running') {
@@ -855,7 +1029,7 @@
                         <button class="action-btn start" title="실행" onclick="startProfile('${profile.id}')"><span>▶️</span></button>
                     `;
                 }
-                
+
                 return `
                     <tr>
                         <td class="checkbox-cell">
@@ -901,7 +1075,7 @@
                 alert('등록된 프로파일이 없습니다.');
                 return;
             }
-            
+
             if (confirm('모든 프로파일을 일괄 실행하시겠습니까?')) {
                 profiles.forEach(profile => {
                     startProfile(profile.id);
@@ -916,7 +1090,7 @@
                 alert('등록된 프로파일이 없습니다.');
                 return;
             }
-            
+
             if (confirm('모든 프로파일을 일시정지하시겠습니까?')) {
                 profiles.forEach(profile => {
                     pauseProfile(profile.id);
@@ -931,7 +1105,7 @@
                 alert('등록된 프로파일이 없습니다.');
                 return;
             }
-            
+
             if (confirm('모든 프로파일을 중지하시겠습니까?')) {
                 profiles.forEach(profile => {
                     stopProfile(profile.id);
@@ -944,12 +1118,12 @@
         document.getElementById('startSelectedBtn').addEventListener('click', function() {
             const selectedIds = getSelectedIds();
             const selectedCount = selectedIds.length;
-            
+
             if (selectedCount === 0) {
                 alert('실행할 프로파일을 선택하세요.');
                 return;
             }
-            
+
             if (confirm(`선택된 ${selectedCount}개의 프로파일을 실행하시겠습니까?`)) {
                 selectedIds.forEach(id => {
                     startProfile(id);
@@ -961,12 +1135,12 @@
         document.getElementById('pauseSelectedBtn').addEventListener('click', function() {
             const selectedIds = getSelectedIds();
             const selectedCount = selectedIds.length;
-            
+
             if (selectedCount === 0) {
                 alert('일시정지할 프로파일을 선택하세요.');
                 return;
             }
-            
+
             if (confirm(`선택된 ${selectedCount}개의 프로파일을 일시정지하시겠습니까?`)) {
                 selectedIds.forEach(id => {
                     pauseProfile(id);
@@ -978,12 +1152,12 @@
         document.getElementById('stopSelectedBtn').addEventListener('click', function() {
             const selectedIds = getSelectedIds();
             const selectedCount = selectedIds.length;
-            
+
             if (selectedCount === 0) {
                 alert('중지할 프로파일을 선택하세요.');
                 return;
             }
-            
+
             if (confirm(`선택된 ${selectedCount}개의 프로파일을 중지하시겠습니까?`)) {
                 selectedIds.forEach(id => {
                     stopProfile(id);
@@ -994,7 +1168,7 @@
 
         // 특정 프로파일에 대한 스케줄 모달 열기
         let currentScheduleProfileId = null;
-        
+
         function openScheduleModalForProfile(profileId) {
             currentScheduleProfileId = profileId;
             openScheduleModal();
@@ -1009,7 +1183,7 @@
         function openScheduleModal() {
             document.getElementById('scheduleModal').classList.add('active');
             updateScheduleUI();
-            
+
             // 현재 스케줄링 대상 표시
             const modalTitle = document.querySelector('#scheduleModal .modal-header h2');
             if (currentScheduleProfileId) {
@@ -1037,10 +1211,10 @@
             const scheduleType = document.getElementById('scheduleType').value;
             const weekdaySelector = document.getElementById('weekdaySelector');
             const dateSelector = document.getElementById('dateSelector');
-            
+
             weekdaySelector.style.display = scheduleType === 'weekly' ? 'flex' : 'none';
             dateSelector.style.display = scheduleType === 'once' ? 'flex' : 'none';
-            
+
             // 오늘 날짜를 기본값으로 설정
             if (scheduleType === 'once') {
                 const today = new Date();
@@ -1054,7 +1228,7 @@
         document.getElementById('applyScheduleBtn').addEventListener('click', function() {
             const scheduleType = document.getElementById('scheduleType').value;
             const scheduleTime = document.getElementById('scheduleTime').value;
-            
+
             // 스케줄 시간 계산
             let scheduleDate;
             switch (scheduleType) {
@@ -1083,7 +1257,7 @@
                     scheduleDate.setMonth(scheduleDate.getMonth() + 1); // 다음달
                     break;
             }
-            
+
             if (currentScheduleProfileId) {
                 // 특정 프로파일만 스케줄링
                 scheduleProfile(currentScheduleProfileId, scheduleDate.toISOString());
@@ -1094,7 +1268,7 @@
                 // 선택된 프로파일 또는 전체 프로파일 스케줄링
                 const selectedIds = getSelectedIds();
                 const selectedCount = selectedIds.length;
-                
+
                 if (selectedCount > 0) {
                     // 선택된 프로파일만 스케줄링
                     selectedIds.forEach(id => {
@@ -1110,7 +1284,7 @@
                     showToast(`모든 프로파일 스케줄을 설정했습니다.`);
                 }
             }
-            
+
             closeScheduleModal();
         });
 
@@ -1121,7 +1295,7 @@
             if (existingToast) {
                 existingToast.remove();
             }
-            
+
             // 새 토스트 생성
             const toast = document.createElement('div');
             toast.className = 'toast';
@@ -1136,9 +1310,9 @@
             toast.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
             toast.style.zIndex = '1000';
             toast.style.transition = 'opacity 0.5s ease';
-            
+
             document.body.appendChild(toast);
-            
+
             // 3초 후 토스트 제거
             setTimeout(() => {
                 toast.style.opacity = '0';
@@ -1153,7 +1327,7 @@
             if (!localStorage.getItem('profileStatusMap')) {
                 const profiles = getProfiles();
                 const statusMap = {};
-                
+
                 profiles.forEach(profile => {
                     // 기본적으로 모든 프로파일은 중지 상태로 시작
                     statusMap[profile.id] = {
@@ -1163,7 +1337,7 @@
                         priority: 'medium'
                     };
                 });
-                
+
                 localStorage.setItem('profileStatusMap', JSON.stringify(statusMap));
             }
         }
@@ -1172,20 +1346,212 @@
         document.addEventListener('DOMContentLoaded', function() {
             // 초기 상태 설정
             initializeProfileStatuses();
-            
+
             // 프로파일 목록 렌더링
             renderProfiles();
-            
+
             // 상태별 카운트 업데이트
             updateStatusCounts();
-            
+
+            // 실행 이력 데이터 로드
+            renderExecutionHistory();
+
+            // 스케줄 설정 관련 초기화
+            setupScheduleUI();
+
+            // 이벤트 리스너 설정
+            setupEventListeners();
+        });
+
+        // 스케줄 설정 관련 초기화
+        function setupScheduleUI() {
             // 현재 날짜로 기본값 설정
             const today = new Date();
             const yyyy = today.getFullYear();
             const mm = String(today.getMonth() + 1).padStart(2, '0');
             const dd = String(today.getDate()).padStart(2, '0');
             document.getElementById('scheduleDate').value = `${yyyy}-${mm}-${dd}`;
-        });
+
+            // 스케줄 타입에 따라 UI 업데이트
+            document.getElementById('scheduleType').addEventListener('change', function() {
+                updateScheduleUI();
+            });
+        }
+
+        // 이벤트 리스너 설정
+        function setupEventListeners() {
+            // 실행 이력 전체 선택
+            const selectAllHistory = document.getElementById('selectAllHistory');
+            if (selectAllHistory) {
+                selectAllHistory.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('.history-checkbox');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = this.checked;
+                    });
+                });
+            }
+
+            // 비교 버튼 클릭
+            const compareBtn = document.getElementById('compareBtn');
+            if (compareBtn) {
+                compareBtn.addEventListener('click', function() {
+                    const selectedIds = Array.from(document.querySelectorAll('.history-checkbox:checked'))
+                        .map(cb => cb.dataset.id);
+
+                    if (selectedIds.length !== 2) {
+                        alert('비교하려면 정확히 2개의 실행 이력을 선택해주세요.');
+                        return;
+                    }
+
+                    alert(`실행 ID: ${selectedIds.join(', ')}를 비교합니다.`);
+                });
+            }
+
+            // 새로고침 버튼
+            const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+            if (refreshHistoryBtn) {
+                refreshHistoryBtn.addEventListener('click', function() {
+                    renderExecutionHistory();
+                    showToast('실행 이력을 새로고침했습니다.');
+                });
+            }
+
+            // 페이지 네비게이션
+            const prevPageBtn = document.getElementById('prevPage');
+            const nextPageBtn = document.getElementById('nextPage');
+
+            if (prevPageBtn && nextPageBtn) {
+                prevPageBtn.addEventListener('click', function() {
+                    showToast('이전 페이지 (실제 구현 필요)');
+                });
+
+                nextPageBtn.addEventListener('click', function() {
+                    showToast('다음 페이지 (실제 구현 필요)');
+                });
+            }
+        }
+
+        // 실행 이력 데이터 샘플 (실제로는 서버 API 호출로 가져올 데이터)
+        const executionHistory = [
+            {
+                id: "exec123",
+                profileId: "profile1",
+                profileName: "일반 사용자 행동 프로파일",
+                startTime: "2025-06-05T09:30:00",
+                endTime: "2025-06-05T10:15:00",
+                status: "success",
+                anomalyScore: 17
+            },
+            {
+                id: "exec124",
+                profileId: "profile3",
+                profileName: "관리자 권한 모니터링 프로파일",
+                startTime: "2025-06-05T10:00:00",
+                endTime: "2025-06-05T10:45:00",
+                status: "warning",
+                anomalyScore: 37
+            },
+            {
+                id: "exec125",
+                profileId: "profile1",
+                profileName: "일반 사용자 행동 프로파일",
+                startTime: "2025-06-04T09:30:00",
+                endTime: "2025-06-04T10:15:00",
+                status: "success",
+                anomalyScore: 12
+            },
+            {
+                id: "exec126",
+                profileId: "profile3",
+                profileName: "관리자 권한 모니터링 프로파일",
+                startTime: "2025-06-04T10:00:00",
+                endTime: "2025-06-04T10:45:00",
+                status: "failed",
+                anomalyScore: 65
+            },
+            {
+                id: "exec127",
+                profileId: "profile5",
+                profileName: "네트워크 액세스 프로파일",
+                startTime: "2025-06-04T15:45:00",
+                endTime: "2025-06-04T16:30:00",
+                status: "success",
+                anomalyScore: 8
+            }
+        ];
+
+        // 실행 이력 렌더링
+        function renderExecutionHistory() {
+            const tableBody = document.querySelector('#historyTable tbody');
+
+            if (executionHistory.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 2rem;">
+                            실행 이력이 없습니다.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tableBody.innerHTML = executionHistory.map(execution => {
+                // 상태에 따른 배지 스타일
+                let statusClass = '';
+                let statusText = '';
+                switch (execution.status) {
+                    case 'success':
+                        statusClass = 'success';
+                        statusText = '성공';
+                        break;
+                    case 'failed':
+                        statusClass = 'failed';
+                        statusText = '실패';
+                        break;
+                    case 'warning':
+                        statusClass = 'warning';
+                        statusText = '경고';
+                        break;
+                    case 'running':
+                        statusClass = 'running';
+                        statusText = '실행 중';
+                        break;
+                }
+
+                // 시간 포맷팅
+                const startTime = new Date(execution.startTime).toLocaleString('ko-KR');
+                const endTime = execution.endTime ? new Date(execution.endTime).toLocaleString('ko-KR') : '-';
+
+                return `
+                    <tr data-id="${execution.id}">
+                        <td class="checkbox-cell">
+                            <input type="checkbox" class="history-checkbox" data-id="${execution.id}">
+                        </td>
+                        <td>${execution.id}</td>
+                        <td>${execution.profileName}</td>
+                        <td>${startTime}</td>
+                        <td>${endTime}</td>
+                        <td><span class="run-status ${statusClass}">${statusText}</span></td>
+                        <td>${execution.anomalyScore}</td>
+                        <td class="actions-cell">
+                            <button class="action-btn" title="결과 보기" onclick="viewExecutionResult('${execution.id}')">👁️</button>
+                            <button class="action-btn" title="다운로드" onclick="downloadExecutionResult('${execution.id}')">📥</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 실행 결과 보기
+        function viewExecutionResult(executionId) {
+            // 실제 구현에서는 결과 페이지로 이동하거나 모달을 표시
+            alert(`실행 ID: ${executionId}의 결과 보기`);
+        }
+
+        // 결과 다운로드
+        function downloadExecutionResult(executionId) {
+            alert(`실행 ID: ${executionId}의 결과를 다운로드합니다.`);
+        }
     </script>
 </body>
-</html> 
+</html>

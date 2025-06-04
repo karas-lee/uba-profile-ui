@@ -6,7 +6,7 @@
     <title>UBA 프로파일 통합 실행 이력</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
             font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
@@ -345,12 +345,12 @@
             .filters {
                 flex-direction: column;
             }
-            
+
             .filter-actions {
                 margin-left: 0;
                 margin-top: 1rem;
             }
-            
+
             .history-table th, .history-table td {
                 padding: 0.75rem 0.5rem;
                 font-size: 0.9rem;
@@ -373,7 +373,6 @@
         <div class="nav-tabs">
             <div class="nav-tab" onclick="window.location.href='uba_integrated_management.html'">통합 실행 관리</div>
             <div class="nav-tab active">실행 이력</div>
-            <div class="nav-tab" onclick="window.location.href='uba_system_health.html'">시스템 상태</div>
         </div>
 
         <div class="filters">
@@ -570,7 +569,7 @@
         function getProfileStatus(profileId) {
             const statusMap = localStorage.getItem('profileStatusMap');
             const statusData = statusMap ? JSON.parse(statusMap) : {};
-            
+
             return statusData[profileId] || {
                 status: 'stopped',
                 lastRun: null,
@@ -583,22 +582,22 @@
         function generateMockExecutionHistory() {
             const profiles = getProfiles();
             if (profiles.length === 0) return [];
-            
+
             const executions = [];
             const today = new Date();
             let executionId = 1;
-            
+
             // 각 프로파일에 대해 모의 이력 데이터 생성
             profiles.forEach(profile => {
                 const status = getProfileStatus(profile.id);
-                
+
                 // 마지막 실행 정보가 있으면 이력 추가
                 if (status.lastRun) {
                     const startDate = new Date(status.lastRun);
-                    const endDate = status.status === 'running' 
-                        ? null 
+                    const endDate = status.status === 'running'
+                        ? null
                         : new Date(startDate.getTime() + getRandomDuration(10, 60) * 60000); // 10-60분
-                    
+
                     const execution = {
                         id: `EX${String(executionId++).padStart(3, '0')}`,
                         profileId: profile.id,
@@ -608,10 +607,10 @@
                         status: status.status === 'running' ? 'running' : getRandomStatus(),
                         result: status.status === 'running' ? null : getRandomResult()
                     };
-                    
+
                     executions.push(execution);
                 }
-                
+
                 // 추가 이력 2-5개 생성 (최근 30일 내)
                 const count = Math.floor(Math.random() * 4) + 2;
                 for (let i = 0; i < count; i++) {
@@ -624,10 +623,10 @@
                         0,
                         0
                     );
-                    
+
                     const duration = getRandomDuration(10, 60); // 10-60분
                     const endDate = new Date(startDate.getTime() + duration * 60000);
-                    
+
                     const execution = {
                         id: `EX${String(executionId++).padStart(3, '0')}`,
                         profileId: profile.id,
@@ -637,14 +636,14 @@
                         status: getRandomStatus(),
                         result: getRandomResult()
                     };
-                    
+
                     executions.push(execution);
                 }
             });
-            
+
             // 날짜 기준 내림차순 정렬
             executions.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
-            
+
             return executions;
         }
 
@@ -652,7 +651,7 @@
         function getRandomStatus() {
             const statuses = ['success', 'warning', 'error'];
             const weights = [0.7, 0.2, 0.1]; // 성공 70%, 경고 20%, 오류 10%
-            
+
             return weightedRandom(statuses, weights);
         }
 
@@ -660,7 +659,7 @@
         function getRandomResult() {
             const results = ['normal', 'anomaly'];
             const weights = [0.8, 0.2]; // 정상 80%, 이상 감지 20%
-            
+
             return weightedRandom(results, weights);
         }
 
@@ -668,7 +667,7 @@
         function weightedRandom(items, weights) {
             const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
             const randomValue = Math.random() * totalWeight;
-            
+
             let weightSum = 0;
             for (let i = 0; i < items.length; i++) {
                 weightSum += weights[i];
@@ -676,7 +675,7 @@
                     return items[i];
                 }
             }
-            
+
             return items[0];
         }
 
@@ -702,7 +701,7 @@
             document.getElementById('profileFilter').value = 'all';
             document.getElementById('statusFilter').value = 'all';
             document.getElementById('resultFilter').value = 'all';
-            
+
             applyFilters(); // 필터 적용하여 화면 갱신
         }
 
@@ -712,7 +711,7 @@
             const profileId = document.getElementById('profileFilter').value;
             const status = document.getElementById('statusFilter').value;
             const result = document.getElementById('resultFilter').value;
-            
+
             // 기간 필터 처리
             let startDate = new Date();
             if (dateRange === 'custom') {
@@ -727,10 +726,10 @@
                 const days = parseInt(dateRange, 10);
                 startDate.setDate(startDate.getDate() - days);
             }
-            
+
             // 시작일 시간을 00:00:00으로 설정
             startDate.setHours(0, 0, 0, 0);
-            
+
             // 필터링된 실행 이력 표시
             renderExecutionHistory(startDate, profileId, status, result);
         }
@@ -738,23 +737,23 @@
         // 실행 이력 렌더링
         function renderExecutionHistory(startDate, profileId, status, result) {
             const executions = generateMockExecutionHistory();
-            
+
             // 필터링
             const filteredExecutions = executions.filter(execution => {
                 const executionDate = new Date(execution.startTime);
                 const isAfterStartDate = executionDate >= startDate;
                 const isMatchingProfile = profileId === 'all' || execution.profileId === profileId;
                 const isMatchingStatus = status === 'all' || execution.status === status;
-                const isMatchingResult = result === 'all' || 
+                const isMatchingResult = result === 'all' ||
                                         (result === 'normal' && execution.result === 'normal') ||
                                         (result === 'anomaly' && execution.result === 'anomaly');
-                
+
                 return isAfterStartDate && isMatchingProfile && isMatchingStatus && isMatchingResult;
             });
-            
+
             // 타임라인 렌더링
             renderTimeline(filteredExecutions, startDate);
-            
+
             // 테이블 렌더링
             renderHistoryTable(filteredExecutions);
         }
@@ -763,23 +762,23 @@
         function renderTimeline(executions, startDate) {
             const timelineDates = document.getElementById('timelineDates');
             const timelineProfiles = document.getElementById('timelineProfiles');
-            
+
             // 날짜 범위 계산 (최근 7일)
             const endDate = new Date();
             const dateRange = 7; // 7일 범위
-            
+
             // 타임라인 날짜 헤더 생성
             timelineDates.innerHTML = '';
             for (let i = dateRange - 1; i >= 0; i--) {
                 const date = new Date(endDate);
                 date.setDate(date.getDate() - i);
-                
+
                 const dateDiv = document.createElement('div');
                 dateDiv.className = 'timeline-date';
                 dateDiv.textContent = `${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
                 timelineDates.appendChild(dateDiv);
             }
-            
+
             // 프로파일별 그룹화
             const profileMap = new Map();
             executions.forEach(execution => {
@@ -791,45 +790,45 @@
                 }
                 profileMap.get(execution.profileId).executions.push(execution);
             });
-            
+
             // 타임라인 프로파일 행 생성
             timelineProfiles.innerHTML = '';
             profileMap.forEach(profile => {
                 const profileDiv = document.createElement('div');
                 profileDiv.className = 'timeline-profile';
-                
+
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'profile-name';
                 nameDiv.textContent = profile.name;
                 profileDiv.appendChild(nameDiv);
-                
+
                 const executionsDiv = document.createElement('div');
                 executionsDiv.className = 'profile-executions';
-                
+
                 // 실행 막대 생성
                 profile.executions.forEach(execution => {
                     const startTime = new Date(execution.startTime);
-                    
+
                     // 타임라인 범위 내인지 확인 (최근 7일)
                     const timelineStart = new Date(endDate);
                     timelineStart.setDate(timelineStart.getDate() - dateRange);
                     timelineStart.setHours(0, 0, 0, 0);
-                    
+
                     if (startTime >= timelineStart) {
                         // 타임라인 상의 위치와 너비 계산
                         const totalMs = dateRange * 24 * 60 * 60 * 1000; // 총 밀리초
                         const startMs = startTime - timelineStart; // 시작 시간의 밀리초
                         const left = (startMs / totalMs) * 100; // 퍼센트 위치
-                        
+
                         let width = 5; // 기본 너비 (실행 중인 경우)
-                        
+
                         if (execution.endTime) {
                             const endTime = new Date(execution.endTime);
                             const durationMs = endTime - startTime;
                             width = (durationMs / totalMs) * 100; // 퍼센트 너비
                             width = Math.max(3, width); // 최소 3% 너비
                         }
-                        
+
                         // 실행 막대 스타일 결정
                         let barClass = 'execution-bar ';
                         switch (execution.status) {
@@ -846,7 +845,7 @@
                                 barClass += 'execution-error';
                                 break;
                         }
-                        
+
                         // 툴팁 텍스트 생성
                         const startTimeStr = new Date(execution.startTime).toLocaleString('ko-KR');
                         const endTimeStr = execution.endTime ? new Date(execution.endTime).toLocaleString('ko-KR') : '진행 중';
@@ -856,20 +855,20 @@
                                          '오류';
                         const resultText = execution.result === 'anomaly' ? '이상 감지' :
                                          execution.result === 'normal' ? '정상' : '-';
-                        
+
                         const tooltip = `${statusText} (${resultText})\n시작: ${startTimeStr}\n종료: ${endTimeStr}`;
-                        
+
                         // 실행 막대 생성
                         const barDiv = document.createElement('div');
                         barDiv.className = barClass;
                         barDiv.style.left = `${left}%`;
                         barDiv.style.width = `${width}%`;
                         barDiv.title = tooltip;
-                        
+
                         executionsDiv.appendChild(barDiv);
                     }
                 });
-                
+
                 profileDiv.appendChild(executionsDiv);
                 timelineProfiles.appendChild(profileDiv);
             });
@@ -878,7 +877,7 @@
         // 이력 테이블 렌더링
         function renderHistoryTable(executions) {
             const tableBody = document.getElementById('historyTableBody');
-            
+
             if (executions.length === 0) {
                 tableBody.innerHTML = `
                     <tr>
@@ -889,7 +888,7 @@
                 `;
                 return;
             }
-            
+
             tableBody.innerHTML = executions.map(execution => {
                 // 상태 배지 스타일
                 let statusBadgeClass = 'status-';
@@ -912,7 +911,7 @@
                         statusText = '오류';
                         break;
                 }
-                
+
                 // 결과 텍스트
                 let resultText = '';
                 if (execution.status === 'running') {
@@ -924,16 +923,16 @@
                 } else {
                     resultText = '정상';
                 }
-                
+
                 // 시간 형식화
                 const startTime = new Date(execution.startTime).toLocaleString('ko-KR');
-                const endTime = execution.endTime 
+                const endTime = execution.endTime
                     ? new Date(execution.endTime).toLocaleString('ko-KR')
                     : '진행 중';
-                
+
                 // 상세보기 버튼 활성화 여부
                 const buttonDisabled = execution.status === 'running' ? 'disabled' : '';
-                
+
                 return `
                     <tr>
                         <td>${execution.id}</td>
@@ -943,7 +942,7 @@
                         <td><span class="status-badge ${statusBadgeClass}">${statusText}</span></td>
                         <td>${resultText}</td>
                         <td>
-                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" 
+                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;"
                                 ${buttonDisabled} onclick="viewExecutionDetails('${execution.id}')">보기</button>
                         </td>
                     </tr>
@@ -962,12 +961,12 @@
         function loadProfiles() {
             const profiles = getProfiles();
             const profileSelect = document.getElementById('profileFilter');
-            
+
             // 기존 옵션 제거 (첫 번째 '전체' 옵션은 유지)
             while (profileSelect.options.length > 1) {
                 profileSelect.remove(1);
             }
-            
+
             // 프로파일 옵션 추가
             profiles.forEach(profile => {
                 const option = document.createElement('option');
@@ -975,7 +974,7 @@
                 option.textContent = profile.name;
                 profileSelect.appendChild(option);
             });
-            
+
             return profiles;
         }
 
@@ -988,13 +987,13 @@
             const dd = String(today.getDate()).padStart(2, '0');
             document.getElementById('startDate').value = `${yyyy}-${mm}-${dd}`;
             document.getElementById('endDate').value = `${yyyy}-${mm}-${dd}`;
-            
+
             // 프로파일 목록 로드
             loadProfiles();
-            
+
             // 필터 적용하여 이력 데이터 표시
             applyFilters();
         });
     </script>
 </body>
-</html> 
+</html>

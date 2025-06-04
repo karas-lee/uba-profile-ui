@@ -6,7 +6,7 @@
     <title>UBA 프로파일 대시보드</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
             font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
@@ -387,11 +387,11 @@
             .profile-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .filters {
                 flex-direction: column;
             }
-            
+
             .search-box {
                 width: 100%;
             }
@@ -608,16 +608,16 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
-            
+
             .list-item-content {
                 margin-bottom: 1rem;
             }
-            
+
             .list-item-actions {
                 width: 100%;
                 justify-content: flex-end;
             }
-            
+
             .list-item-description {
                 flex-direction: column;
                 gap: 0.5rem;
@@ -652,12 +652,6 @@
                 <div class="btn-group">
                     <a href="uba_integrated_management.html" class="btn btn-secondary">
                         통합 실행 관리
-                    </a>
-                    <a href="uba_integrated_execution.html" class="btn btn-secondary">
-                        통합 실행 이력
-                    </a>
-                    <a href="uba_system_health.html" class="btn btn-secondary">
-                        시스템 상태
                     </a>
                 </div>
                 <button class="btn btn-primary" id="newProfileBtn">
@@ -774,7 +768,7 @@
     <script>
         // 뷰 타입 상태 관리 (기본값: card)
         let currentViewType = localStorage.getItem('ubaProfileViewType') || 'card';
-        
+
         // 로컬 스토리지에서 프로파일 목록 가져오기
         function getProfiles() {
             const profiles = localStorage.getItem('ubaProfiles');
@@ -786,28 +780,28 @@
             const profileGrid = document.getElementById('profileGrid');
             const emptyState = document.getElementById('emptyState');
             const profiles = getProfiles();
-            
+
             // 필터 적용
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const typeFilter = document.getElementById('typeFilter').value;
             const scopeFilter = document.getElementById('scopeFilter').value;
-            
+
             const filteredProfiles = profiles.filter(profile => {
                 const nameMatch = profile.name.toLowerCase().includes(searchTerm);
                 const typeMatch = typeFilter === 'all' || profile.profileType === typeFilter;
                 const scopeMatch = scopeFilter === 'all' || profile.analysisScope === scopeFilter;
-                
+
                 return nameMatch && typeMatch && scopeMatch;
             });
-            
+
             if (profiles.length === 0) {
                 profileGrid.innerHTML = '';
                 emptyState.style.display = 'block';
                 return;
             }
-            
+
             emptyState.style.display = 'none';
-            
+
             if (filteredProfiles.length === 0) {
                 profileGrid.innerHTML = `
                     <div class="alert" style="grid-column: 1 / -1;">
@@ -817,7 +811,7 @@
                 `;
                 return;
             }
-            
+
             // 뷰 타입에 따라 다른 렌더링 함수 호출
             if (currentViewType === 'card') {
                 renderCardView(filteredProfiles, profileGrid);
@@ -825,11 +819,11 @@
                 renderListView(filteredProfiles, profileGrid);
             }
         }
-        
+
         // 카드 뷰 렌더링
         function renderCardView(profiles, container) {
             container.className = 'profile-grid card-view';
-            
+
             container.innerHTML = profiles.map(profile => {
                 // 프로파일 유형 표시 텍스트 변환
                 let profileTypeText;
@@ -839,7 +833,7 @@
                     case 'hybrid': profileTypeText = '하이브리드'; break;
                     default: profileTypeText = '사용자 정의';
                 }
-                
+
                 // 분석 범위 표시 텍스트 변환
                 let scopeText;
                 switch (profile.analysisScope) {
@@ -849,28 +843,28 @@
                     case 'custom': scopeText = '사용자 정의'; break;
                     default: scopeText = '-';
                 }
-                
+
                 // 로그 소스 정보
                 const logSourceName = profile.logSourceName || '-';
-                
+
                 // 선택된 메트릭 태그 (최대 3개까지만 표시)
-                const metricTags = profile.selectedMetrics 
+                const metricTags = profile.selectedMetrics
                     ? profile.selectedMetrics.slice(0, 3).map(metric => `<span class="metric-tag">${metric}</span>`).join('')
                     : '';
-                
-                const moreMetrics = profile.selectedMetrics && profile.selectedMetrics.length > 3 
-                    ? `<span class="metric-tag">+${profile.selectedMetrics.length - 3}개 더</span>` 
+
+                const moreMetrics = profile.selectedMetrics && profile.selectedMetrics.length > 3
+                    ? `<span class="metric-tag">+${profile.selectedMetrics.length - 3}개 더</span>`
                     : '';
-                
+
                 // 생성일 표시 (ISO 형식 날짜를 한국 형식으로 변환)
-                const createdDate = profile.createdAt 
+                const createdDate = profile.createdAt
                     ? new Date(profile.createdAt).toLocaleDateString('ko-KR', {
                         year: 'numeric',
                         month: 'long',
                         day: 'numeric'
                     })
                     : '-';
-                
+
                 return `
                     <div class="profile-card" data-id="${profile.id}">
                         <div class="profile-header">
@@ -893,7 +887,7 @@
                                 </button>
                             </div>
                         </div>
-                        
+
                         <div class="profile-info">
                             <div class="info-row">
                                 <div class="info-label">로그 소스:</div>
@@ -923,11 +917,11 @@
                 `;
             }).join('');
         }
-        
+
         // 리스트 뷰 렌더링
         function renderListView(profiles, container) {
             container.className = 'profile-grid list-view';
-            
+
             container.innerHTML = profiles.map(profile => {
                 // 프로파일 유형 표시 텍스트 변환
                 let profileTypeText;
@@ -937,22 +931,22 @@
                     case 'hybrid': profileTypeText = '하이브리드'; break;
                     default: profileTypeText = '사용자 정의';
                 }
-                
+
                 // 로그 소스 정보
                 const logSourceName = profile.logSourceName || '-';
-                
+
                 // 메트릭 개수
                 const metricCount = profile.selectedMetrics ? profile.selectedMetrics.length : 0;
-                
+
                 // 생성일 표시 (ISO 형식 날짜를 한국 형식으로 변환)
-                const createdDate = profile.createdAt 
+                const createdDate = profile.createdAt
                     ? new Date(profile.createdAt).toLocaleDateString('ko-KR', {
                         year: 'numeric',
                         month: 'numeric',
                         day: 'numeric'
                     })
                     : '-';
-                
+
                 return `
                     <div class="list-item" data-id="${profile.id}">
                         <div class="list-item-content">
@@ -996,14 +990,14 @@
         // 뷰 타입 변경 함수
         function changeViewType(type) {
             currentViewType = type;
-            
+
             // 로컬 스토리지에 저장
             localStorage.setItem('ubaProfileViewType', type);
-            
+
             // 버튼 활성화 상태 변경
             document.getElementById('cardViewBtn').classList.toggle('active', type === 'card');
             document.getElementById('listViewBtn').classList.toggle('active', type === 'list');
-            
+
             // 프로필 다시 렌더링
             renderProfiles();
         }
@@ -1012,12 +1006,12 @@
         function viewProfileDetails(profileId) {
             const profiles = getProfiles();
             const profile = profiles.find(p => p.id === profileId);
-            
+
             if (!profile) return;
-            
+
             const modal = document.getElementById('detailsModal');
             const detailsContent = document.getElementById('detailsContent');
-            
+
             // 프로파일 유형 표시 텍스트 변환
             let profileTypeText;
             switch (profile.profileType) {
@@ -1026,7 +1020,7 @@
                 case 'hybrid': profileTypeText = '하이브리드'; break;
                 default: profileTypeText = '사용자 정의';
             }
-            
+
             // 분석 범위 표시 텍스트 변환
             let scopeText;
             switch (profile.analysisScope) {
@@ -1036,17 +1030,17 @@
                 case 'custom': scopeText = '사용자 정의'; break;
                 default: scopeText = '-';
             }
-            
+
             // 알림 설정 표시
             const alerts = profile.alerts ? profile.alerts.map(alert => `<span class="metric-tag">${alert}</span>`).join('') : '없음';
-            
+
             // 메트릭 표시 (모두 표시)
-            const metrics = profile.selectedMetrics 
-                ? profile.selectedMetrics.map(metric => `<span class="metric-tag">${metric}</span>`).join('') 
+            const metrics = profile.selectedMetrics
+                ? profile.selectedMetrics.map(metric => `<span class="metric-tag">${metric}</span>`).join('')
                 : '없음';
-            
+
             // 생성일 표시 (ISO 형식 날짜를 한국 형식으로 변환)
-            const createdDate = profile.createdAt 
+            const createdDate = profile.createdAt
                 ? new Date(profile.createdAt).toLocaleDateString('ko-KR', {
                     year: 'numeric',
                     month: 'long',
@@ -1055,12 +1049,12 @@
                     minute: '2-digit'
                 })
                 : '-';
-            
+
             detailsContent.innerHTML = `
                 <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">${profile.name}</h3>
-                
+
                 <p style="color: #94a3b8; margin-bottom: 1.5rem;">${profile.description || '설명 없음'}</p>
-                
+
                 <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
                     <h4 style="margin-bottom: 0.75rem; color: #6366f1;">기본 정보</h4>
                     <div class="info-row">
@@ -1076,7 +1070,7 @@
                         <div class="info-value">${createdDate}</div>
                     </div>
                 </div>
-                
+
                 <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
                     <h4 style="margin-bottom: 0.75rem; color: #6366f1;">데이터 소스</h4>
                     <div class="info-row">
@@ -1088,12 +1082,12 @@
                         <div class="info-value">${profile.learningPeriod || '-'}일</div>
                     </div>
                 </div>
-                
+
                 <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
                     <h4 style="margin-bottom: 0.75rem; color: #6366f1;">분석 메트릭</h4>
                     <div style="margin-top: 0.5rem;">${metrics}</div>
                 </div>
-                
+
                 <div style="background: rgba(15, 23, 42, 0.5); border-radius: 0.5rem; padding: 1rem;">
                     <h4 style="margin-bottom: 0.75rem; color: #6366f1;">임계값 설정</h4>
                     <div class="info-row">
@@ -1110,13 +1104,13 @@
                     <div style="margin-top: 0.5rem;">${alerts}</div>
                 </div>
             `;
-            
+
             const footerDiv = modal.querySelector('.modal-footer');
             footerDiv.innerHTML = `
                 <button class="btn btn-secondary" onclick="closeDetailsModal()">닫기</button>
                 <button class="btn btn-primary" onclick="viewProfileResults('${profile.id}')">분석 결과 보기</button>
             `;
-            
+
             modal.classList.add('active');
         }
 
@@ -1131,15 +1125,15 @@
             const modal = document.getElementById('deleteModal');
             const confirmBtn = document.getElementById('confirmDeleteBtn');
             const profileNameEl = document.getElementById('deleteProfileName');
-            
+
             profileNameEl.textContent = profileName;
-            
+
             // 확인 버튼 클릭 이벤트 리스너 설정
             confirmBtn.onclick = () => {
                 deleteProfile(profileId);
                 closeDeleteModal();
             };
-            
+
             modal.classList.add('active');
         }
 
@@ -1159,7 +1153,7 @@
         function deleteProfile(profileId) {
             let profiles = getProfiles();
             profiles = profiles.filter(profile => profile.id !== profileId);
-            
+
             localStorage.setItem('ubaProfiles', JSON.stringify(profiles));
             renderProfiles();
         }
@@ -1168,7 +1162,7 @@
         function openWizardModal(editId = null) {
             const modal = document.getElementById('wizardModal');
             const iframe = document.getElementById('wizardIframe');
-            
+
             // URL 설정 (편집 모드일 경우 edit 파라미터 추가)
             let url = 'uba_profile_wizard.html';
             if (editId) {
@@ -1176,13 +1170,13 @@
             } else {
                 url += '?modal=true';
             }
-            
+
             // iframe 소스 설정
             iframe.src = url;
-            
+
             // 모달 표시
             modal.classList.add('active');
-            
+
             // 스크롤 방지
             document.body.style.overflow = 'hidden';
         }
@@ -1191,15 +1185,15 @@
         function closeWizardModal() {
             const modal = document.getElementById('wizardModal');
             modal.classList.remove('active');
-            
+
             // 스크롤 허용
             document.body.style.overflow = '';
-            
+
             // iframe 내용 초기화
             setTimeout(() => {
                 document.getElementById('wizardIframe').src = '';
             }, 500); // 트랜지션 이후에 실행
-            
+
             // 프로필 목록 새로고침
             renderProfiles();
         }
@@ -1208,14 +1202,14 @@
         document.addEventListener('DOMContentLoaded', () => {
             // 저장된 뷰 타입 적용
             changeViewType(currentViewType);
-            
+
             // 새 프로필 생성 버튼 이벤트 변경
             const newProfileBtn = document.getElementById('newProfileBtn');
             newProfileBtn.onclick = function(e) {
                 e.preventDefault();
                 openWizardModal();
             };
-            
+
             // 뷰 타입 토글 버튼 이벤트
             document.getElementById('cardViewBtn').addEventListener('click', () => changeViewType('card'));
             document.getElementById('listViewBtn').addEventListener('click', () => changeViewType('list'));
@@ -1225,10 +1219,10 @@
         function viewProfileResults(profileId) {
             // 상세정보 모달이 열려있으면 닫기
             closeDetailsModal();
-            
+
             // 분석 결과 페이지로 이동
             window.location.href = `uba_profile_results.html?id=${profileId}`;
         }
     </script>
 </body>
-</html> 
+</html>
