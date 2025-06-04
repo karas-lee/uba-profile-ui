@@ -6,7 +6,7 @@
     <title>UBA 프로파일 마법사</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
             font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
@@ -383,6 +383,37 @@
             margin: 0.125rem;
         }
 
+        .select-all-btn {
+            display: flex;
+            align-items: center;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #a5b4fc;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .select-all-btn:hover {
+            background: rgba(99, 102, 241, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .select-all-btn input[type="checkbox"] {
+            accent-color: #6366f1;
+        }
+
+        .selected-count {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 0.3rem 0.8rem;
+            border-radius: 0.5rem;
+        }
+
         @media (max-width: 768px) {
             .wizard-container { padding: 1rem; }
             .progress-bar { flex-direction: column; align-items: center; gap: 1rem; }
@@ -424,7 +455,7 @@
             <!-- Step 1: 기본 정보 -->
             <div class="step-content active" id="content1">
                 <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">UBA 프로파일 기본 정보</h3>
-                
+
                 <div class="form-group">
                     <label for="profileName">프로파일 이름 *</label>
                     <input type="text" id="profileName" placeholder="예: 일반 사용자 행동 프로파일">
@@ -464,7 +495,7 @@
             <!-- Step 2: 데이터 소스 -->
             <div class="step-content" id="content2">
                 <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">데이터 소스 선택</h3>
-                
+
                 <div class="form-group">
                     <label>로그 소스 선택 * (하나만 선택)</label>
                     <div class="radio-group">
@@ -546,15 +577,22 @@
             <!-- Step 3: 분석 메트릭 -->
             <div class="step-content" id="content3">
                 <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">분석 메트릭 설정</h3>
-                
+
                 <div id="selectedLogInfo" class="alert alert-info" style="display: none;">
                     <strong>선택된 로그 소스:</strong> <span id="logSourceName">-</span><br>
                     <strong>분석 가능한 메트릭:</strong> <span id="availableMetrics">-</span>
                 </div>
-                
+
                 <div class="metric-card" id="timeMetricCard">
                     <h4>📅 시간 기반 분석</h4>
                     <p>사용자의 시간적 행동 패턴을 분석하여 이상 징후를 탐지합니다.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0;">
+                        <button type="button" id="selectAllTimeBtn" class="select-all-btn">
+                            <span>전체 선택</span>
+                            <input type="checkbox" id="selectAllTime" style="margin-left: 8px;">
+                        </button>
+                        <span id="timeSelectedCount" class="selected-count">0개 선택됨</span>
+                    </div>
                     <div class="checkbox-group" style="margin-top: 1rem;">
                         <div class="checkbox-item">
                             <input type="checkbox" id="loginTime" value="login_time">
@@ -597,6 +635,13 @@
                 <div class="metric-card" id="networkMetricCard">
                     <h4>🌐 네트워크 기반 분석</h4>
                     <p>네트워크 접근 패턴과 지리적 위치를 분석하여 이상 징후를 탐지합니다.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0;">
+                        <button type="button" id="selectAllNetworkBtn" class="select-all-btn">
+                            <span>전체 선택</span>
+                            <input type="checkbox" id="selectAllNetwork" style="margin-left: 8px;">
+                        </button>
+                        <span id="networkSelectedCount" class="selected-count">0개 선택됨</span>
+                    </div>
                     <div class="checkbox-group" style="margin-top: 1rem;">
                         <div class="checkbox-item">
                             <input type="checkbox" id="ipAddress" value="ip_address">
@@ -643,6 +688,13 @@
                 <div class="metric-card" id="accessMetricCard">
                     <h4>🔐 접근 기반 분석</h4>
                     <p>시스템 리소스 접근 패턴과 권한 사용을 분석하여 이상 징후를 탐지합니다.</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 0.75rem 0;">
+                        <button type="button" id="selectAllAccessBtn" class="select-all-btn">
+                            <span>전체 선택</span>
+                            <input type="checkbox" id="selectAllAccess" style="margin-left: 8px;">
+                        </button>
+                        <span id="accessSelectedCount" class="selected-count">0개 선택됨</span>
+                    </div>
                     <div class="checkbox-group" style="margin-top: 1rem;">
                         <div class="checkbox-item">
                             <input type="checkbox" id="resourceAccess" value="resource_access">
@@ -702,7 +754,7 @@
             <!-- Step 4: 임계값 설정 -->
             <div class="step-content" id="content4">
                 <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">이상 징후 임계값 설정</h3>
-                
+
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                     <div class="form-group">
                         <label for="anomalyThreshold">이상 징후 민감도</label>
@@ -766,7 +818,7 @@
             <!-- Step 5: 검토 및 완료 -->
             <div class="step-content" id="content5">
                 <h3 style="margin-bottom: 2rem; color: #f1f5f9; font-size: 1.5rem;">설정 검토 및 완료</h3>
-                
+
                 <div class="summary-grid">
                     <div class="summary-card">
                         <h4>📋 기본 정보</h4>
@@ -836,131 +888,236 @@
         let currentStep = 1;
         const totalSteps = 5;
 
+        // 전체 선택 버튼 이벤트 리스너 설정
+        document.getElementById('selectAllTimeBtn').addEventListener('click', function() {
+            const checkbox = document.getElementById('selectAllTime');
+            checkbox.checked = !checkbox.checked;
+
+            // 모든 활성화된 시간 기반 체크박스에 적용
+            const timeCheckboxes = document.querySelectorAll('#timeMetricCard input[type="checkbox"]:not(#selectAllTime):not(:disabled)');
+            timeCheckboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+
+            updateSelectedCount('time');
+        });
+
+        document.getElementById('selectAllNetworkBtn').addEventListener('click', function() {
+            const checkbox = document.getElementById('selectAllNetwork');
+            checkbox.checked = !checkbox.checked;
+
+            // 모든 활성화된 네트워크 기반 체크박스에 적용
+            const networkCheckboxes = document.querySelectorAll('#networkMetricCard input[type="checkbox"]:not(#selectAllNetwork):not(:disabled)');
+            networkCheckboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+
+            updateSelectedCount('network');
+        });
+
+        document.getElementById('selectAllAccessBtn').addEventListener('click', function() {
+            const checkbox = document.getElementById('selectAllAccess');
+            checkbox.checked = !checkbox.checked;
+
+            // 모든 활성화된 접근 기반 체크박스에 적용
+            const accessCheckboxes = document.querySelectorAll('#accessMetricCard input[type="checkbox"]:not(#selectAllAccess):not(:disabled)');
+            accessCheckboxes.forEach(cb => {
+                cb.checked = checkbox.checked;
+            });
+
+            updateSelectedCount('access');
+        });
+
+        // 전체 선택 체크박스에도 이벤트 리스너 추가
+        document.getElementById('selectAllTime').addEventListener('change', function() {
+            const timeCheckboxes = document.querySelectorAll('#timeMetricCard input[type="checkbox"]:not(#selectAllTime):not(:disabled)');
+            timeCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+
+            updateSelectedCount('time');
+        });
+
+        document.getElementById('selectAllNetwork').addEventListener('change', function() {
+            const networkCheckboxes = document.querySelectorAll('#networkMetricCard input[type="checkbox"]:not(#selectAllNetwork):not(:disabled)');
+            networkCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+
+            updateSelectedCount('network');
+        });
+
+        document.getElementById('selectAllAccess').addEventListener('change', function() {
+            const accessCheckboxes = document.querySelectorAll('#accessMetricCard input[type="checkbox"]:not(#selectAllAccess):not(:disabled)');
+            accessCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+
+            updateSelectedCount('access');
+        });
+
+        // 체크박스 상태에 따라 선택된 항목 수 업데이트
+        function updateSelectedCount(type) {
+            const cardId = type + 'MetricCard';
+            const counterId = type + 'SelectedCount';
+            const checkboxes = document.querySelectorAll(`#${cardId} input[type="checkbox"]:not(#selectAll${type.charAt(0).toUpperCase() + type.slice(1)}):not(:disabled):checked`);
+            document.getElementById(counterId).textContent = `${checkboxes.length}개 선택됨`;
+        }
+
+        // 개별 체크박스 상태에 따라 전체 선택 체크박스 상태 업데이트
+        function updateSelectAllCheckbox(categoryId, selectAllId) {
+            const checkboxes = document.querySelectorAll(`#${categoryId} input[type="checkbox"]:not(#${selectAllId}):not(:disabled)`);
+            const selectAllCheckbox = document.getElementById(selectAllId);
+
+            const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+            const someChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = someChecked && !allChecked;
+
+            // 선택된 항목 수 업데이트
+            const type = categoryId.replace('MetricCard', '');
+            updateSelectedCount(type);
+        }
+
+        // 개별 체크박스에 이벤트 리스너 추가
+        document.querySelectorAll('#timeMetricCard input[type="checkbox"]:not(#selectAllTime)').forEach(checkbox => {
+            checkbox.addEventListener('change', () => updateSelectAllCheckbox('timeMetricCard', 'selectAllTime'));
+        });
+
+        document.querySelectorAll('#networkMetricCard input[type="checkbox"]:not(#selectAllNetwork)').forEach(checkbox => {
+            checkbox.addEventListener('change', () => updateSelectAllCheckbox('networkMetricCard', 'selectAllNetwork'));
+        });
+
+        document.querySelectorAll('#accessMetricCard input[type="checkbox"]:not(#selectAllAccess)').forEach(checkbox => {
+            checkbox.addEventListener('change', () => updateSelectAllCheckbox('accessMetricCard', 'selectAllAccess'));
+        });
+
         // 로그 소스별 메트릭 가용성 매트릭스 (확장된 메트릭)
         const logSourceMetrics = {
             'windows': {
                 'name': 'Windows 이벤트 로그',
-                'time_based': { 
-                    'available': true, 
+                'time_based': {
+                    'available': true,
                     'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'session_overlap', 'idle_time']
                 },
-                'network_based': { 
-                    'available': false, 
-                    'metrics': [], 
+                'network_based': {
+                    'available': false,
+                    'metrics': [],
                     'reason': 'Windows 이벤트 로그는 네트워크 정보를 포함하지 않습니다.'
                 },
-                'access_based': { 
-                    'available': true, 
+                'access_based': {
+                    'available': true,
                     'metrics': ['resource_access', 'auth_failures', 'privilege_escalation', 'admin_access', 'app_usage', 'system_command', 'remote_access']
                 }
             },
             'ad': {
                 'name': 'Active Directory',
-                'time_based': { 
-                    'available': true, 
+                'time_based': {
+                    'available': true,
                     'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'session_overlap']
                 },
-                'network_based': { 
-                    'available': false, 
-                    'metrics': [], 
+                'network_based': {
+                    'available': false,
+                    'metrics': [],
                     'reason': 'Active Directory는 네트워크 트래픽 정보를 제공하지 않습니다.'
                 },
-                'access_based': { 
-                    'available': true, 
+                'access_based': {
+                    'available': true,
                     'metrics': ['resource_access', 'auth_failures', 'privilege_escalation', 'admin_access', 'app_usage', 'system_command', 'remote_access']
                 }
             },
             'firewall': {
                 'name': '방화벽 로그',
-                'time_based': { 
-                    'available': true, 
+                'time_based': {
+                    'available': true,
                     'metrics': ['login_time', 'after_hours', 'weekend_activity', 'timezone_anomaly']
                 },
-                'network_based': { 
-                    'available': true, 
+                'network_based': {
+                    'available': true,
                     'metrics': ['ip_address', 'geo_location', 'data_volume', 'impossible_travel', 'network_device', 'bandwidth_usage', 'connection_pattern']
                 },
-                'access_based': { 
-                    'available': false, 
-                    'metrics': [], 
+                'access_based': {
+                    'available': false,
+                    'metrics': [],
                     'reason': '방화벽 로그는 애플리케이션 수준의 접근 정보를 제공하지 않습니다.'
                 }
             },
             'proxy': {
                 'name': '프록시/웹 로그',
-                'time_based': { 
-                    'available': true, 
+                'time_based': {
+                    'available': true,
                     'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'timezone_anomaly']
                 },
-                'network_based': { 
-                    'available': true, 
+                'network_based': {
+                    'available': true,
                     'metrics': ['ip_address', 'geo_location', 'data_volume', 'impossible_travel', 'network_device', 'bandwidth_usage', 'connection_pattern', 'proxy_bypass']
                 },
-                'access_based': { 
-                    'available': true, 
+                'access_based': {
+                    'available': true,
                     'metrics': ['resource_access', 'auth_failures', 'file_download', 'app_usage', 'share_access']
                 }
             },
             'vpn': {
                 'name': 'VPN 로그',
-                'time_based': { 
-                    'available': true, 
+                'time_based': {
+                    'available': true,
                     'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'session_overlap', 'timezone_anomaly']
                 },
-                'network_based': { 
-                    'available': true, 
+                'network_based': {
+                    'available': true,
                     'metrics': ['ip_address', 'geo_location', 'data_volume', 'impossible_travel', 'vpn_usage', 'network_device', 'bandwidth_usage', 'connection_pattern']
                 },
-                'access_based': { 
-                    'available': false, 
-                    'metrics': ['auth_failures'], 
+                'access_based': {
+                    'available': false,
+                    'metrics': ['auth_failures'],
                     'reason': 'VPN 로그는 VPN 연결 정보만 제공하며, 내부 리소스 접근은 추적할 수 없습니다.'
                 }
             },
             'dns': {
                 'name': 'DNS 로그',
-                'time_based': { 
-                    'available': true, 
+                'time_based': {
+                    'available': true,
                     'metrics': ['login_time', 'after_hours', 'weekend_activity', 'timezone_anomaly']
                 },
-                'network_based': { 
-                    'available': true, 
+                'network_based': {
+                    'available': true,
                     'metrics': ['ip_address', 'geo_location', 'impossible_travel', 'connection_pattern']
                 },
-                'access_based': { 
-                    'available': false, 
-                    'metrics': [], 
+                'access_based': {
+                    'available': false,
+                    'metrics': [],
                     'reason': 'DNS 로그는 도메인 요청 정보만 제공하며, 인증이나 권한 정보는 포함하지 않습니다.'
                 }
             },
             'email': {
                 'name': '이메일 로그',
-                'time_based': { 
-                    'available': true, 
+                'time_based': {
+                    'available': true,
                     'metrics': ['login_time', 'after_hours', 'weekend_activity', 'login_frequency', 'timezone_anomaly']
                 },
-                'network_based': { 
-                    'available': true, 
+                'network_based': {
+                    'available': true,
                     'metrics': ['ip_address', 'data_volume', 'impossible_travel', 'network_device']
                 },
-                'access_based': { 
-                    'available': true, 
+                'access_based': {
+                    'available': true,
                     'metrics': ['resource_access', 'auth_failures', 'sensitive_data', 'file_download', 'email_behavior']
                 }
             },
             'database': {
                 'name': '데이터베이스 로그',
-                'time_based': { 
-                    'available': true, 
+                'time_based': {
+                    'available': true,
                     'metrics': ['login_time', 'session_duration', 'after_hours', 'weekend_activity', 'login_frequency', 'idle_time']
                 },
-                'network_based': { 
-                    'available': false, 
-                    'metrics': [], 
+                'network_based': {
+                    'available': false,
+                    'metrics': [],
                     'reason': '데이터베이스 로그는 네트워크 수준 정보를 제공하지 않습니다.'
                 },
-                'access_based': { 
-                    'available': true, 
+                'access_based': {
+                    'available': true,
                     'metrics': ['resource_access', 'auth_failures', 'privilege_escalation', 'sensitive_data', 'admin_access', 'db_query', 'system_command']
                 }
             }
@@ -969,7 +1126,7 @@
         function updateProgressBar() {
             for (let i = 1; i <= totalSteps; i++) {
                 const stepCircle = document.getElementById(`step${i}`);
-                
+
                 if (i < currentStep) {
                     stepCircle.className = 'step-circle completed';
                     stepCircle.innerHTML = '✓';
@@ -987,11 +1144,11 @@
             for (let i = 1; i <= totalSteps; i++) {
                 document.getElementById(`content${i}`).classList.remove('active');
             }
-            
+
             document.getElementById(`content${step}`).classList.add('active');
-            
+
             document.getElementById('prevBtn').disabled = step === 1;
-            
+
             const nextBtn = document.getElementById('nextBtn');
             if (step === totalSteps) {
                 nextBtn.innerHTML = '프로파일 생성 🚀';
@@ -1008,7 +1165,7 @@
                     currentStep++;
                     showStep(currentStep);
                     updateProgressBar();
-                    
+
                     if (currentStep === totalSteps) {
                         updateSummary();
                     }
@@ -1041,7 +1198,7 @@
                     }
                     return true;
                 case 3:
-                    const metrics = document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled)');
+                    const metrics = document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled):not(#selectAllTime):not(#selectAllNetwork):not(#selectAllAccess)');
                     if (metrics.length === 0) {
                         alert('최소 하나의 분석 메트릭을 선택해주세요.');
                         return false;
@@ -1065,17 +1222,17 @@
             const logInfo = document.getElementById('selectedLogInfo');
             const logSourceName = document.getElementById('logSourceName');
             const availableMetrics = document.getElementById('availableMetrics');
-            
+
             logInfo.style.display = 'block';
             logSourceName.textContent = logConfig.name;
-            
+
             const allAvailableMetrics = [];
-            
+
             updateMetricCard('time', logConfig.time_based, allAvailableMetrics);
             updateMetricCard('network', logConfig.network_based, allAvailableMetrics);
             updateMetricCard('access', logConfig.access_based, allAvailableMetrics);
 
-            availableMetrics.textContent = allAvailableMetrics.length > 0 ? 
+            availableMetrics.textContent = allAvailableMetrics.length > 0 ?
                 allAvailableMetrics.join(', ') : '사용 가능한 메트릭이 없습니다';
         }
 
@@ -1084,31 +1241,68 @@
             const unavailableId = type + 'MetricUnavailable';
             const card = document.getElementById(cardId);
             const unavailableDiv = document.getElementById(unavailableId);
-            
+            const selectAllId = 'selectAll' + type.charAt(0).toUpperCase() + type.slice(1);
+            const selectAllCheckbox = document.getElementById(selectAllId);
+            const selectAllBtn = document.getElementById(selectAllId + 'Btn');
+
             if (config.available) {
                 card.classList.remove('disabled');
                 unavailableDiv.style.display = 'none';
-                
-                const checkboxes = card.querySelectorAll('input[type="checkbox"]');
+
+                // 전체 선택 버튼 활성화
+                selectAllBtn.disabled = false;
+                selectAllBtn.style.opacity = '1';
+                selectAllCheckbox.disabled = false;
+
+                const checkboxes = card.querySelectorAll('input[type="checkbox"]:not(#' + selectAllId + ')');
+                let enabledCount = 0;
+                let checkedCount = 0;
+
                 checkboxes.forEach(checkbox => {
                     const metricValue = checkbox.value;
                     if (config.metrics.includes(metricValue)) {
                         checkbox.disabled = false;
                         checkbox.parentElement.style.opacity = '1';
                         allAvailableMetrics.push(checkbox.nextElementSibling.textContent);
+                        enabledCount++;
+                        if (checkbox.checked) {
+                            checkedCount++;
+                        }
                     } else {
                         checkbox.disabled = true;
                         checkbox.checked = false;
                         checkbox.parentElement.style.opacity = '0.5';
                     }
                 });
+
+                // 전체 선택 체크박스 상태 업데이트
+                if (enabledCount > 0) {
+                    selectAllCheckbox.checked = (checkedCount === enabledCount);
+                    selectAllCheckbox.indeterminate = (checkedCount > 0 && checkedCount < enabledCount);
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                }
+
+                // 선택된 항목 수 업데이트
+                document.getElementById(type + 'SelectedCount').textContent = checkedCount + '개 선택됨';
             } else {
                 card.classList.add('disabled');
                 unavailableDiv.style.display = 'block';
                 if (config.reason) {
                     unavailableDiv.textContent = config.reason;
                 }
-                
+
+                // 전체 선택 버튼 비활성화
+                selectAllBtn.disabled = true;
+                selectAllBtn.style.opacity = '0.5';
+                selectAllCheckbox.disabled = true;
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+
+                // 선택된 항목 수 초기화
+                document.getElementById(type + 'SelectedCount').textContent = '0개 선택됨';
+
                 const checkboxes = card.querySelectorAll('input[type="checkbox"]');
                 checkboxes.forEach(checkbox => {
                     checkbox.disabled = true;
@@ -1118,13 +1312,38 @@
         }
 
         function disableAllMetrics() {
-            document.getElementById('selectedLogInfo').style.display = 'none';
-            
-            const metricCards = ['timeMetricCard', 'networkMetricCard', 'accessMetricCard'];
-            metricCards.forEach(cardId => {
+            const logInfo = document.getElementById('selectedLogInfo');
+            const availableMetrics = document.getElementById('availableMetrics');
+
+            logInfo.style.display = 'none';
+            availableMetrics.textContent = '-';
+
+            // 모든 카드와 체크박스 비활성화
+            const metricTypes = ['time', 'network', 'access'];
+
+            metricTypes.forEach(type => {
+                const cardId = type + 'MetricCard';
+                const unavailableId = type + 'MetricUnavailable';
                 const card = document.getElementById(cardId);
+                const unavailableDiv = document.getElementById(unavailableId);
+                const selectAllId = 'selectAll' + type.charAt(0).toUpperCase() + type.slice(1);
+                const selectAllCheckbox = document.getElementById(selectAllId);
+                const selectAllBtn = document.getElementById(selectAllId + 'Btn');
+
                 card.classList.add('disabled');
-                
+                unavailableDiv.style.display = 'block';
+                unavailableDiv.textContent = '로그 소스를 먼저 선택해주세요.';
+
+                // 전체 선택 버튼 비활성화
+                selectAllBtn.disabled = true;
+                selectAllBtn.style.opacity = '0.5';
+                selectAllCheckbox.disabled = true;
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+
+                // 선택된 항목 수 초기화
+                document.getElementById(type + 'SelectedCount').textContent = '0개 선택됨';
+
                 const checkboxes = card.querySelectorAll('input[type="checkbox"]');
                 checkboxes.forEach(checkbox => {
                     checkbox.disabled = true;
@@ -1140,9 +1359,31 @@
                     document.querySelectorAll('.radio-item').forEach(item => {
                         item.classList.remove('selected');
                     });
-                    
+
                     if (this.checked) {
                         this.closest('.radio-item').classList.add('selected');
+                        updateMetricsBasedOnLogSource();
+                    }
+                });
+            });
+
+            // 라디오 아이템 클릭 시 라디오 버튼 선택
+            document.querySelectorAll('.radio-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    // 이미 라디오 버튼 자체를 클릭한 경우 중복 처리 방지
+                    if (e.target.type === 'radio') return;
+
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio && !radio.disabled) {
+                        radio.checked = true;
+
+                        // 선택 스타일 업데이트
+                        document.querySelectorAll('.radio-item').forEach(item => {
+                            item.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+
+                        // 메트릭 업데이트
                         updateMetricsBasedOnLogSource();
                     }
                 });
@@ -1153,9 +1394,9 @@
             document.getElementById('summaryName').textContent = document.getElementById('profileName').value || '-';
             document.getElementById('summaryType').textContent = document.getElementById('profileType').selectedOptions[0].textContent;
             document.getElementById('summaryScope').textContent = document.getElementById('analysisScope').selectedOptions[0].textContent;
-            
+
             document.getElementById('summaryLearning').textContent = document.getElementById('learningPeriod').value + '일';
-            
+
             const selectedLogSource = document.querySelector('input[name="logSource"]:checked');
             const sourcesContainer = document.getElementById('summaryDataSources');
             if (selectedLogSource) {
@@ -1164,21 +1405,29 @@
             } else {
                 sourcesContainer.textContent = '선택된 소스가 없습니다';
             }
-            
-            const selectedMetrics = Array.from(document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled)'))
+
+            // "전체 선택" 체크박스는 제외하고 선택된 메트릭만 가져오기
+            const selectedMetrics = Array.from(document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled):not(#selectAllTime):not(#selectAllNetwork):not(#selectAllAccess)'))
                 .map(cb => cb.nextElementSibling.textContent);
+
+            console.log('선택된 메트릭:', selectedMetrics); // 디버깅용
+
             const metricsContainer = document.getElementById('summaryMetrics');
             if (selectedMetrics.length > 0) {
                 metricsContainer.innerHTML = selectedMetrics.map(metric => `<span class="tag">${metric}</span>`).join('');
             } else {
                 metricsContainer.textContent = '선택된 메트릭이 없습니다';
             }
-            
+
             document.getElementById('summarySensitivity').textContent = document.getElementById('anomalyThreshold').selectedOptions[0].textContent;
             document.getElementById('summaryRiskScore').textContent = document.getElementById('riskScore').value + '점';
-            
+
+            // 알림 설정 체크박스 명확하게 식별
             const selectedAlerts = Array.from(document.querySelectorAll('#content4 input[type="checkbox"]:checked'))
                 .map(cb => cb.nextElementSibling.textContent);
+
+            console.log('선택된 알림:', selectedAlerts); // 디버깅용
+
             const alertsContainer = document.getElementById('summaryAlerts');
             if (selectedAlerts.length > 0) {
                 alertsContainer.innerHTML = selectedAlerts.map(alert => `<span class="tag">${alert}</span>`).join('');
@@ -1191,50 +1440,50 @@
             const btn = document.getElementById('nextBtn');
             btn.disabled = true;
             btn.innerHTML = '생성 중... ⏳';
-            
-            // 프로파일 데이터 수집
-            const profileData = {
-                id: currentEditProfile ? currentEditProfile : generateUniqueId(),
-                name: document.getElementById('profileName').value,
-                description: document.getElementById('profileDescription').value,
-                profileType: document.getElementById('profileType').value,
-                analysisScope: document.getElementById('analysisScope').value,
-                
-                // 로그 소스 정보
-                logSource: document.querySelector('input[name="logSource"]:checked')?.value,
-                logSourceName: document.querySelector('input[name="logSource"]:checked') ? 
-                    logSourceMetrics[document.querySelector('input[name="logSource"]:checked').value].name : null,
-                learningPeriod: document.getElementById('learningPeriod').value,
-                
-                // 분석 메트릭 - 체크된 항목들의 라벨 텍스트 수집
-                selectedMetrics: Array.from(document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled)'))
-                    .map(cb => cb.nextElementSibling.textContent),
-                
-                // 임계값 설정
-                anomalyThreshold: document.getElementById('anomalyThreshold').selectedOptions[0].textContent,
-                alertSeverity: document.getElementById('alertSeverity').value,
-                riskScore: document.getElementById('riskScore').value,
-                
-                // 알림 설정
-                alerts: Array.from(document.querySelectorAll('#content4 input[type="checkbox"]:checked'))
-                    .map(cb => cb.nextElementSibling.textContent),
-                
-                // 생성/수정 시간
-                createdAt: currentEditProfile ? 
-                    (getProfileById(currentEditProfile)?.createdAt || new Date().toISOString()) : 
-                    new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            // 로컬 스토리지에 저장
-            saveProfile(profileData);
-            
-            setTimeout(() => {
-                alert(`UBA 프로파일이 성공적으로 ${currentEditProfile ? '수정' : '생성'}되었습니다!\n\n시스템이 곧 학습을 시작할 예정입니다.`);
-                btn.innerHTML = '완료 ✅';
-                
-                setTimeout(() => {
-                    // 모달 모드인지 확인
+
+            try {
+                // 프로파일 데이터 수집
+                const profileData = {
+                    id: currentEditProfile ? currentEditProfile : generateUniqueId(),
+                    name: document.getElementById('profileName').value,
+                    description: document.getElementById('profileDescription').value,
+                    profileType: document.getElementById('profileType').value,
+                    analysisScope: document.getElementById('analysisScope').value,
+
+                    // 로그 소스 정보
+                    logSource: document.querySelector('input[name="logSource"]:checked')?.value,
+                    logSourceName: document.querySelector('input[name="logSource"]:checked') ?
+                        logSourceMetrics[document.querySelector('input[name="logSource"]:checked').value].name : null,
+                    learningPeriod: document.getElementById('learningPeriod').value,
+
+                    // 분석 메트릭 - 체크된 항목들의 라벨 텍스트 수집 (전체 선택 체크박스 제외)
+                    selectedMetrics: Array.from(document.querySelectorAll('#content3 input[type="checkbox"]:checked:not(:disabled):not(#selectAllTime):not(#selectAllNetwork):not(#selectAllAccess)'))
+                        .map(cb => cb.nextElementSibling.textContent),
+
+                    // 임계값 설정
+                    anomalyThreshold: document.getElementById('anomalyThreshold').selectedOptions[0].textContent,
+                    alertSeverity: document.getElementById('alertSeverity').value,
+                    riskScore: document.getElementById('riskScore').value,
+
+                    // 알림 설정
+                    alerts: Array.from(document.querySelectorAll('#content4 input[type="checkbox"]:checked'))
+                        .map(cb => cb.nextElementSibling.textContent),
+
+                    // 생성/수정 시간
+                    createdAt: currentEditProfile ?
+                        (getProfileById(currentEditProfile)?.createdAt || new Date().toISOString()) :
+                        new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                // 로컬 스토리지에 저장
+                const saveResult = saveProfile(profileData);
+
+                if (saveResult) {
+                    alert(`UBA 프로파일이 성공적으로 ${currentEditProfile ? '수정' : '생성'}되었습니다!\n\n시스템이 곧 학습을 시작할 예정입니다.`);
+                    btn.innerHTML = '완료 ✅';
+
+                    // 페이지 이동 로직을 즉시 실행
                     if (isModalMode()) {
                         // 부모 창에 닫기 신호 전달
                         window.parent.closeWizardModal();
@@ -1242,30 +1491,51 @@
                         // 목록 페이지로 이동
                         window.location.href = 'index.html';
                     }
-                }, 1000);
-            }, 1000);
+                } else {
+                    alert('프로파일 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+                    btn.disabled = false;
+                    btn.innerHTML = '프로파일 생성 🚀';
+                }
+            } catch (error) {
+                console.error('프로파일 생성 오류:', error);
+                alert('프로파일 생성 중 오류가 발생했습니다: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '프로파일 생성 🚀';
+            }
         }
 
         // 프로파일 저장 함수
         function saveProfile(profileData) {
-            // 기존 프로파일 목록 가져오기
-            let profiles = localStorage.getItem('ubaProfiles');
-            profiles = profiles ? JSON.parse(profiles) : [];
-            
-            // 편집 모드인 경우 기존 프로파일 업데이트, 아니면 새로 추가
-            if (currentEditProfile) {
-                const index = profiles.findIndex(p => p.id === currentEditProfile);
-                if (index !== -1) {
-                    profiles[index] = profileData;
+            try {
+                // 기존 프로파일 목록 가져오기
+                let profiles = localStorage.getItem('ubaProfiles');
+                profiles = profiles ? JSON.parse(profiles) : [];
+
+                // 편집 모드인 경우 기존 프로파일 업데이트, 아니면 새로 추가
+                if (currentEditProfile) {
+                    const index = profiles.findIndex(p => p.id === currentEditProfile);
+                    if (index !== -1) {
+                        profiles[index] = profileData;
+                    } else {
+                        profiles.push(profileData);
+                    }
                 } else {
                     profiles.push(profileData);
                 }
-            } else {
-                profiles.push(profileData);
+
+                // 로컬 스토리지에 저장
+                localStorage.setItem('ubaProfiles', JSON.stringify(profiles));
+
+                // 저장 확인 - 실제로 저장되었는지 확인
+                const savedProfiles = localStorage.getItem('ubaProfiles');
+                const parsedProfiles = savedProfiles ? JSON.parse(savedProfiles) : [];
+                const savedProfile = parsedProfiles.find(p => p.id === profileData.id);
+
+                return !!savedProfile; // 저장된 프로파일이 존재하면 true 반환
+            } catch (error) {
+                console.error('프로파일 저장 오류:', error);
+                return false;
             }
-            
-            // 로컬 스토리지에 저장
-            localStorage.setItem('ubaProfiles', JSON.stringify(profiles));
         }
 
         // 고유 ID 생성
@@ -1277,7 +1547,7 @@
         function getProfileById(id) {
             const profiles = localStorage.getItem('ubaProfiles');
             if (!profiles) return null;
-            
+
             const profileArray = JSON.parse(profiles);
             return profileArray.find(profile => profile.id === id);
         }
@@ -1289,12 +1559,12 @@
         function checkEditMode() {
             const urlParams = new URLSearchParams(window.location.search);
             const editId = urlParams.get('edit');
-            
+
             if (editId) {
                 currentEditProfile = editId;
                 loadProfileData(editId);
             }
-            
+
             // 모달 모드인 경우 취소 버튼 동작 변경
             if (isModalMode()) {
                 const cancelBtn = document.querySelector('.btn-secondary[style*="margin-right: auto"]');
@@ -1307,7 +1577,7 @@
                 }
             }
         }
-        
+
         // 모달 모드인지 확인하는 함수
         function isModalMode() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -1318,20 +1588,20 @@
         function loadProfileData(profileId) {
             const profile = getProfileById(profileId);
             if (!profile) return;
-            
+
             // 페이지 타이틀 업데이트
             document.querySelector('.header h1').textContent = 'UBA 프로파일 편집';
             document.querySelector('.header p').textContent = profile.name + ' 프로파일을 수정합니다';
-            
+
             // 기본 정보 입력
             document.getElementById('profileName').value = profile.name;
             document.getElementById('profileDescription').value = profile.description || '';
-            
+
             // 셀렉트 박스 값 설정
             setSelectValue('profileType', profile.profileType);
             setSelectValue('analysisScope', profile.analysisScope);
             setSelectValue('learningPeriod', profile.learningPeriod);
-            
+
             // 로그 소스 선택
             if (profile.logSource) {
                 const logSourceRadio = document.getElementById(profile.logSource + 'Logs');
@@ -1341,26 +1611,26 @@
                     updateMetricsBasedOnLogSource();
                 }
             }
-            
+
             // 임계값 설정
             setSelectValue('anomalyThreshold', getKeyByText('anomalyThreshold', profile.anomalyThreshold));
             setSelectValue('alertSeverity', profile.alertSeverity);
-            
+
             const riskScoreSlider = document.getElementById('riskScore');
             riskScoreSlider.value = profile.riskScore || 70;
             document.getElementById('riskScoreValue').textContent = riskScoreSlider.value;
-            
+
             // 알림 설정
             const alertCheckboxes = document.querySelectorAll('#content4 input[type="checkbox"]');
             alertCheckboxes.forEach(checkbox => {
                 checkbox.checked = profile.alerts && profile.alerts.includes(checkbox.nextElementSibling.textContent);
             });
-            
+
             // 메트릭 설정 (약간 딜레이를 줘서 메트릭 업데이트가 완료된 후에 실행)
             setTimeout(() => {
                 const metricCheckboxes = document.querySelectorAll('#content3 input[type="checkbox"]:not(:disabled)');
                 metricCheckboxes.forEach(checkbox => {
-                    checkbox.checked = profile.selectedMetrics && 
+                    checkbox.checked = profile.selectedMetrics &&
                         profile.selectedMetrics.includes(checkbox.nextElementSibling.textContent);
                 });
             }, 300);
@@ -1378,7 +1648,7 @@
                 }
             }
         }
-        
+
         // 텍스트로 셀렉트 박스 값 찾기
         function getKeyByText(selectId, text) {
             const select = document.getElementById(selectId);
@@ -1396,7 +1666,7 @@
             currentStep = 1;
             showStep(currentStep);
             updateProgressBar();
-            
+
             document.getElementById('profileName').value = '';
             document.getElementById('profileDescription').value = '';
             document.getElementById('profileType').selectedIndex = 0;
@@ -1406,27 +1676,27 @@
             document.getElementById('alertSeverity').selectedIndex = 2;
             document.getElementById('riskScore').value = 70;
             document.getElementById('riskScoreValue').textContent = '70';
-            
+
             const radioButtons = document.querySelectorAll('input[name="logSource"]');
             radioButtons.forEach(radio => {
                 radio.checked = false;
                 radio.closest('.radio-item').classList.remove('selected');
             });
-            
+
             const checkboxes = document.querySelectorAll('input[type="checkbox"]');
             checkboxes.forEach(cb => {
                 cb.checked = false;
                 cb.disabled = false;
             });
-            
+
             document.getElementById('emailAlert').checked = true;
             document.getElementById('dashboardAlert').checked = true;
-            
+
             disableAllMetrics();
-            
+
             // 편집 모드 초기화
             currentEditProfile = null;
-            
+
             // 페이지 타이틀 복원
             document.querySelector('.header h1').textContent = 'UBA 프로파일 마법사';
             document.querySelector('.header p').textContent = '사용자 및 엔터티 행동 분석 프로파일을 쉽게 설정하세요';
@@ -1440,13 +1710,13 @@
         // 초기화
         updateProgressBar();
         showStep(currentStep);
-        
+
         setTimeout(() => {
             setupLogSourceListeners();
             disableAllMetrics();
             checkEditMode(); // 편집 모드 확인
         }, 100);
-        
+
         // 취소 버튼 추가
         const buttonGroup = document.querySelector('.button-group');
         const cancelBtn = document.createElement('button');
@@ -1463,10 +1733,9 @@
                 }
             }
         };
-        
+
         // prevBtn 앞에 취소 버튼 삽입
         buttonGroup.insertBefore(cancelBtn, document.getElementById('prevBtn'));
     </script>
 </body>
 </html>
-                
