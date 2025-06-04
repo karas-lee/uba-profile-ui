@@ -53,7 +53,7 @@
 ### 통합 실행 이력
 - 모든 프로파일의 실행 이력 타임라인 시각화
 - 날짜, 프로파일, 상태, 결과별 필터링
-- 상세 실행 이력 및 결과 조회 
+- 상세 실행 이력 및 결과 조회
 - 실행 상세 정보 팝업
 
 ### 시스템 상태 모니터링
@@ -65,9 +65,10 @@
 ## 기술 스택
 
 - **프론트엔드**: HTML, CSS, 순수 JavaScript
-- **데이터 저장**: localStorage (클라이언트 측 저장)
-- **백엔드 서버**: Express.js (정적 파일 제공)
-- **실행 환경**: Node.js
+- **백엔드 서버**: Express.js (API 서버 및 정적 파일 제공)
+- **데이터베이스**: PostgreSQL (프로파일 및 상태 정보 저장)
+- **폴백 메커니즘**: 로컬 메모리 스토리지 (데이터베이스 연결 실패 시)
+- **실행 환경**: Node.js (v14 이상)
 
 ## 시작하기
 
@@ -75,6 +76,113 @@
 
 - Node.js (v14 이상)
 - npm 또는 yarn
+- PostgreSQL (v12 이상)
+
+### PostgreSQL 설치 및 설정
+
+#### Windows에 PostgreSQL 설치
+
+1. [PostgreSQL 공식 웹사이트](https://www.postgresql.org/download/windows/)에서 설치 프로그램 다운로드
+2. 설치 프로그램 실행 및 기본 옵션으로 설치 진행
+3. 설치 중 요청되는 superuser(postgres) 비밀번호 설정 및 기억
+4. 기본 포트(5432) 사용 권장
+5. 설치 완료 후 pgAdmin 또는 psql 명령줄 도구로 접속 테스트
+
+#### macOS에 PostgreSQL 설치
+
+##### Homebrew를 사용한 설치 (권장)
+```bash
+# Homebrew 설치 (없는 경우)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# PostgreSQL 설치
+brew install postgresql@14
+
+# PostgreSQL 서비스 시작
+brew services start postgresql@14
+```
+
+##### 공식 설치 프로그램 사용
+1. [PostgreSQL 공식 웹사이트](https://www.postgresql.org/download/macosx/)에서 설치 프로그램 다운로드
+2. 설치 프로그램 실행 및 지시에 따라 설치
+3. 설치 중 요청되는 superuser(postgres) 비밀번호 설정
+
+#### Linux(Ubuntu)에 PostgreSQL 설치
+```bash
+# 패키지 리스트 업데이트
+sudo apt update
+
+# PostgreSQL 설치
+sudo apt install postgresql postgresql-contrib
+
+# PostgreSQL 서비스 시작
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+
+# 비밀번호 설정
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'your_password';"
+```
+
+#### 데이터베이스 및 테이블 생성
+
+1. PostgreSQL에 접속:
+```bash
+# macOS/Linux
+psql -U postgres
+
+# Windows (명령 프롬프트에서)
+psql -U postgres
+```
+
+2. UBA 프로파일 데이터베이스 생성:
+```sql
+CREATE DATABASE uba_profiles;
+```
+
+3. 새로 생성한 데이터베이스에 연결:
+```sql
+\c uba_profiles
+```
+
+4. 필요한 테이블 생성:
+```sql
+CREATE TABLE profiles (
+    id VARCHAR(50) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    profile_type VARCHAR(20),
+    analysis_scope VARCHAR(20),
+    log_source_name VARCHAR(100),
+    log_source_type VARCHAR(50),
+    data JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE profile_status (
+    id SERIAL PRIMARY KEY,
+    profile_id VARCHAR(50) REFERENCES profiles(id),
+    status VARCHAR(20) NOT NULL,
+    last_run TIMESTAMP,
+    next_run TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 환경 설정
+
+1. 프로젝트 루트에 `.env` 파일 생성:
+```
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_NAME=uba_profiles
+PORT=3000
+```
+
+2. `.env` 파일의 DB_PASSWORD를 설치 시 설정한 PostgreSQL 비밀번호로 변경
 
 ### 설치 및 실행
 
@@ -135,10 +243,34 @@ npm run dev
 yarn dev
 ```
 
-## 데이터 저장
+## 데이터 저장 메커니즘
 
-모든 프로파일 데이터는 localStorage에 저장되며, 페이지가 로드될 때마다 불러옵니다.
-백엔드 서버 연동이 필요한 경우, API 호출 부분을 실제 서버 엔드포인트로 수정하세요.
+### 기본 데이터 저장 - PostgreSQL
+모든 프로파일 데이터 및 상태 정보는 PostgreSQL 데이터베이스에 저장됩니다.
+애플리케이션은 API를 통해 데이터베이스와 통신합니다.
+
+### 폴백 메커니즘 - 메모리 스토리지
+데이터베이스 연결이 실패할 경우, 애플리케이션은 자동으로 인메모리 스토리지로 전환되어
+로컬 개발 환경에서도 중단 없이 기능을 테스트할 수 있습니다. 이 모드에서는 서버 재시작 시
+데이터가 초기화됩니다.
+
+## 최근 변경 사항
+
+### 데이터베이스 통합
+- PostgreSQL 데이터베이스 연결 및 쿼리 지원 추가
+- 데이터베이스 연결 실패 시 자동 메모리 스토리지 폴백 메커니즘 구현
+- 프로파일 및 상태 정보를 위한 테이블 스키마 설계
+
+### 비동기 처리 개선
+- 프로파일 생성 및 수정 함수를 비동기(async/await) 방식으로 전환
+- API 호출 패턴 개선으로 응답성 향상
+- 로딩 상태 표시 및 에러 처리 강화
+
+### UI/UX 개선
+- 프로파일 수정 시 기존 데이터 정확히 로드되도록 개선
+- 메트릭 선택 로직 개선 및 부분 일치 검색 기능 추가
+- 로그 소스 선택 시 DOM 이벤트 처리 안정성 강화
+- 디버깅 로그 추가 및 에러 처리 개선
 
 ## 주요 기능 사용법
 
@@ -150,6 +282,11 @@ yarn dev
    - 분석 메트릭 설정 (시간/네트워크/접근 기반 분석)
    - 임계값 설정 (알림 심각도, 위험 점수)
    - 설정 검토 및 완료
+
+### 프로파일 편집
+1. 메인 대시보드에서 프로파일 카드의 "편집" 버튼 클릭
+2. 기존 설정이 미리 로드된 마법사에서 필요한 변경 수행
+3. 모든 단계를 검토 후 "프로파일 수정" 버튼 클릭하여 저장
 
 ### 통합 관리
 1. 메인 대시보드 상단의 "통합 실행 관리" 버튼 클릭
@@ -165,6 +302,19 @@ yarn dev
    - 날짜, 프로파일, 상태, 결과별 필터링
    - 실행 상세 정보 조회
 
+## 문제 해결
+
+### 데이터베이스 연결 문제
+- PostgreSQL 서비스가 실행 중인지 확인: `systemctl status postgresql` 또는 `brew services list`
+- 포트가 올바르게 설정되었는지 확인 (기본값: 5432)
+- `.env` 파일의 데이터베이스 자격 증명이 올바른지 확인
+- 방화벽 설정 확인 및 필요한 경우 PostgreSQL 포트 허용
+
+### 서버 실행 문제
+- 포트 충돌 시 `.env` 파일에서 PORT 값 변경
+- Node.js 버전 확인: `node -v` (v14 이상 권장)
+- npm 패키지 설치 확인: `npm list express pg dotenv`
+
 ## 기여 방법
 
 1. 이 저장소를 Fork합니다.
@@ -174,4 +324,4 @@ yarn dev
 
 ## 라이선스
 
-MIT 
+MIT
