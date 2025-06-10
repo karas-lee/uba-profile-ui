@@ -215,6 +215,75 @@ class BaselineEngineAPIClient {
     }
 
     /**
+     * 수동 베이스라인 생성
+     * @param {Array<string>} profileIds - 프로파일 ID 배열
+     * @param {boolean} force - 강제 실행 여부 (기본값: false)
+     */
+    async generateManualBaseline(profileIds, force = false) {
+        try {
+            const requestData = {
+                profile_ids: profileIds,
+                force: force
+            };
+            const response = await this.client.post('/api/v1/baselines/manual', requestData);
+            return response.data;
+        } catch (error) {
+            console.error('수동 베이스라인 생성 실패:', error.message);
+            throw new Error(`수동 베이스라인 생성 실패: ${error.message}`);
+        }
+    }
+
+    /**
+     * 베이스라인 생성 작업 상태 조회
+     * @param {string} jobId - 작업 ID
+     */
+    async getBaselineJobStatus(jobId) {
+        try {
+            const response = await this.client.get(`/api/v1/baselines/jobs/${jobId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`베이스라인 작업 상태 조회 실패 (${jobId}):`, error.message);
+            throw new Error(`베이스라인 작업 상태 조회 실패: ${error.message}`);
+        }
+    }
+
+    /**
+     * 베이스라인 실행 이력 조회 (베이스라인 엔진 전용)
+     * @param {Object} filters - 필터 조건
+     * @param {string} filters.profile_id - 프로파일 ID
+     * @param {string} filters.status - 상태 (completed, in_progress, failed)
+     * @param {number} filters.limit - 최대 결과 수
+     * @param {number} filters.offset - 오프셋
+     */
+    async getBaselineExecutionHistory(filters = {}) {
+        try {
+            const params = Object.fromEntries(
+                Object.entries(filters).filter(([_, value]) => value !== null && value !== undefined)
+            );
+
+            const response = await this.client.get('/api/v1/baselines/history', { params });
+            return response.data;
+        } catch (error) {
+            console.error('베이스라인 실행 이력 조회 실패:', error.message);
+            throw new Error(`베이스라인 실행 이력 조회 실패: ${error.message}`);
+        }
+    }
+
+    /**
+     * 프로파일별 최근 베이스라인 실행 상태 조회
+     * @param {string} profileId - 프로파일 ID
+     */
+    async getProfileBaselineStatus(profileId) {
+        try {
+            const response = await this.client.get(`/api/v1/profiles/${profileId}/baseline/status`);
+            return response.data;
+        } catch (error) {
+            console.error(`프로파일 베이스라인 상태 조회 실패 (${profileId}):`, error.message);
+            throw new Error(`프로파일 베이스라인 상태 조회 실패: ${error.message}`);
+        }
+    }
+
+    /**
      * 베이스라인 목록 조회
      * @param {string} profileId - 프로파일 ID
      * @param {string} metricName - 메트릭 이름 (선택)

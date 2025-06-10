@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>베이스라인 관리</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -527,8 +528,8 @@
 
                 <div style="margin-top: 2rem;">
                     <h4 style="margin-bottom: 1rem; color: #f1f5f9; font-size: 1.1rem;">시간대별 데이터 분포</h4>
-                    <div class="chart-container">
-                        시간대별 데이터 분포 차트가 이곳에 표시됩니다.
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="timeDistributionChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -609,44 +610,109 @@
         });
 
         // 프로필 정보 로드
-        function loadProfileData(profileId) {
-            // 로컬 스토리지에서 프로필 기본 정보 가져오기
-            const profiles = localStorage.getItem('ubaProfiles');
-            if (!profiles) {
-                alert('프로필 정보를 찾을 수 없습니다.');
+        async function loadProfileData(profileId) {
+            try {
+                // 베이스라인 엔진에서 프로파일 정보 가져오기
+                const response = await fetch(`/api/profiles/${profileId}`);
+                if (!response.ok) {
+                    throw new Error(`프로파일 조회 실패: ${response.status}`);
+                }
+
+                profileData = await response.json();
+                console.log('프로파일 데이터 로드 성공:', profileData);
+
+                // 프로필 정보 표시
+                displayProfileInfo(profileData);
+
+                // 베이스라인 상태 정보도 로드
+                await loadBaselineStatus(profileId);
+
+            } catch (error) {
+                console.error('프로파일 정보 로드 실패:', error);
+                alert('해당 프로파일을 찾을 수 없습니다.');
                 goBackToList();
-                return;
             }
+        }
 
-            const profileList = JSON.parse(profiles);
-            profileData = profileList.find(p => p.id === profileId);
+        // 베이스라인 상태 정보 로드
+        async function loadBaselineStatus(profileId) {
+            try {
+                const response = await fetch(`/api/profiles/${profileId}/baseline/status`);
+                if (response.ok) {
+                    const baselineStatus = await response.json();
+                    console.log('베이스라인 상태:', baselineStatus);
+                    displayBaselineStatus(baselineStatus);
+                }
 
-            if (!profileData) {
-                alert('해당 프로필을 찾을 수 없습니다.');
-                goBackToList();
-                return;
+                // 베이스라인 분석 결과도 로드하여 시간대별 데이터 표시
+                await loadBaselineAnalysisResults(profileId);
+
+            } catch (error) {
+                console.warn('베이스라인 상태 조회 실패:', error);
             }
+        }
 
-            // 프로필 정보 표시
-            displayProfileInfo(profileData);
+        // 베이스라인 분석 결과 로드
+        async function loadBaselineAnalysisResults(profileId) {
+            try {
+                const response = await fetch(`/api/profiles/${profileId}/baseline/results`);
+                if (response.ok) {
+                    const analysisResults = await response.json();
+                    console.log('베이스라인 분석 결과:', analysisResults);
+
+                    // 시간대별 데이터 분포 차트 업데이트
+                    updateTimeDistributionChart(analysisResults);
+
+                    // 베이스라인 품질 정보 업데이트
+                    updateBaselineQualityInfo(analysisResults);
+                } else {
+                    console.warn('베이스라인 분석 결과 조회 실패:', response.status);
+                    showNoDataMessage();
+                }
+            } catch (error) {
+                console.warn('베이스라인 분석 결과 로드 실패:', error);
+                showNoDataMessage();
+            }
+        }
+
+        // 베이스라인 상태 정보 표시
+        function displayBaselineStatus(baselineStatus) {
+            // 베이스라인 카드에 실제 상태 정보 표시
+            if (baselineStatus.baseline_count) {
+                const baselineCard = document.querySelector('.dashboard-card .card-body p');
+                if (baselineCard) {
+                    baselineCard.innerHTML = `
+                        현재 <strong>${baselineStatus.baseline_count}개</strong>의 베이스라인이 활성화되어 있습니다.<br>
+                        마지막 업데이트: <strong>${baselineStatus.latest_job ? new Date(baselineStatus.latest_job.completed_at || baselineStatus.latest_job.created_at).toLocaleDateString('ko-KR') : '정보 없음'}</strong>
+                    `;
+                }
+            }
         }
 
         // 프로필 기본 정보 표시
         function displayProfileInfo(profile) {
             document.getElementById('profileName').textContent = profile.name;
 
-            // 프로파일 유형
+            // 프로파일 유형 (베이스라인 엔진 API 구조 기준)
             let profileTypeText;
-            switch (profile.profileType) {
+            switch (profile.profile_type) {
                 case 'user': profileTypeText = '사용자'; break;
                 case 'entity': profileTypeText = '엔터티'; break;
                 case 'hybrid': profileTypeText = '하이브리드'; break;
+                case 'group': profileTypeText = '그룹'; break;
                 default: profileTypeText = '사용자 정의';
             }
             document.getElementById('profileType').textContent = profileTypeText + ' 프로파일';
 
-            // 로그 소스
-            document.getElementById('logSource').textContent = profile.logSourceName || '-';
+            // 로그 소스 (베이스라인 엔진 API 구조 기준)
+            const logSourceMap = {
+                'vpn': 'VPN',
+                'proxy': '프록시',
+                'database': '데이터베이스',
+                'application': '애플리케이션',
+                'system': '시스템'
+            };
+            document.getElementById('logSource').textContent = logSourceMap[profile.log_source] || profile.log_source;
         }
 
         // 슬라이더 설정
@@ -716,12 +782,164 @@
 
         // 목록으로 돌아가기
         function goBackToList() {
-            window.location.href = 'index.html';
+            window.location.href = 'uba_integrated_management.html';
         }
 
         // 이전 페이지로 돌아가기
         function goBack() {
             window.history.back();
+        }
+
+        // 시간대별 데이터 분포 차트 업데이트
+        function updateTimeDistributionChart(analysisResults) {
+            const ctx = document.getElementById('timeDistributionChart');
+            if (!ctx || !analysisResults || !analysisResults.baselines) {
+                return;
+            }
+
+            // 시간대별 데이터 준비 (0-23시간대)
+            const hourlyData = new Array(24).fill(0);
+            const hourlyLabels = [];
+
+            for (let i = 0; i < 24; i++) {
+                hourlyLabels.push(`${i}시`);
+            }
+
+            // 베이스라인 데이터에서 시간대별 분포 계산
+            analysisResults.baselines.forEach(baseline => {
+                if (baseline.statistical_data) {
+                    // login_time_pattern 메트릭에서 시간 정보 추출
+                    if (baseline.metric_name === 'login_time_pattern' && baseline.statistical_data.hourly_distribution) {
+                        const distribution = baseline.statistical_data.hourly_distribution;
+                        Object.keys(distribution).forEach(hour => {
+                            const hourIndex = parseInt(hour);
+                            if (hourIndex >= 0 && hourIndex < 24) {
+                                hourlyData[hourIndex] += distribution[hour];
+                            }
+                        });
+                    }
+                }
+            });
+
+            // 데이터가 없는 경우 차트를 표시하지 않음
+            if (hourlyData.every(val => val === 0)) {
+                showNoDataMessage();
+                return;
+            }
+
+            // 기존 차트 제거
+            if (window.timeChart) {
+                window.timeChart.destroy();
+            }
+
+            // 새 차트 생성
+            window.timeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: hourlyLabels,
+                    datasets: [{
+                        label: '활동 빈도',
+                        data: hourlyData,
+                        backgroundColor: 'rgba(99, 102, 241, 0.6)',
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#e2e8f0'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.3)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.3)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 베이스라인 품질 정보 업데이트
+        function updateBaselineQualityInfo(analysisResults) {
+            if (!analysisResults || !analysisResults.baselines) {
+                return;
+            }
+
+            // 품질 점수 계산
+            const qualityScores = analysisResults.baselines.map(b => b.quality_score || 0);
+            const avgQuality = qualityScores.length > 0 ?
+                (qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length) : 0;
+
+            // 메트릭 카드 업데이트
+            const metricCards = document.querySelectorAll('.metric-card');
+
+            if (metricCards[0]) {
+                metricCards[0].innerHTML = `
+                    <div class="metric-name">활성 베이스라인</div>
+                    <div class="metric-value">${analysisResults.baselines.length}개</div>
+                `;
+            }
+
+            if (metricCards[1]) {
+                metricCards[1].innerHTML = `
+                    <div class="metric-name">평균 품질 점수</div>
+                    <div class="metric-value">${(avgQuality * 100).toFixed(1)}%</div>
+                `;
+            }
+
+            if (metricCards[2]) {
+                const latestBaseline = analysisResults.baselines[0];
+                const learningPeriod = profileData?.learning_period || 30;
+                metricCards[2].innerHTML = `
+                    <div class="metric-name">학습 데이터 기간</div>
+                    <div class="metric-value">${learningPeriod}일</div>
+                `;
+            }
+
+            if (metricCards[3]) {
+                const latestBaseline = analysisResults.baselines[0];
+                const updateDate = latestBaseline?.created_at ?
+                    new Date(latestBaseline.created_at).toLocaleDateString('ko-KR') :
+                    new Date().toLocaleDateString('ko-KR');
+                metricCards[3].innerHTML = `
+                    <div class="metric-name">마지막 업데이트</div>
+                    <div class="metric-value">${updateDate}</div>
+                `;
+            }
+        }
+
+        // 데이터 없음 메시지 표시
+        function showNoDataMessage() {
+            const chartContainer = document.querySelector('.chart-container');
+            if (chartContainer) {
+                chartContainer.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; color: #94a3b8;">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">📊</div>
+                        <div>베이스라인 분석 결과가 없습니다</div>
+                        <div style="font-size: 0.8rem; margin-top: 0.5rem;">베이스라인 생성 후 데이터가 표시됩니다</div>
+                    </div>
+                `;
+            }
         }
     </script>
 </body>

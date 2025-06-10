@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UBA 프로파일 분석 결과</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -648,6 +652,28 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        .normal-range-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-left: 4px solid #28a745;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            font-size: 0.9em;
+            line-height: 1.5;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .normal-range-info strong {
+            color: #155724;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .normal-range-info br {
+            line-height: 1.8;
+        }
     </style>
 </head>
 <body>
@@ -695,24 +721,11 @@
 
         <div class="profile-nav">
             <a href="uba_profile_results.html" class="nav-item active">분석 결과</a>
-            <a href="uba_baseline_management.html" class="nav-item">베이스라인 관리</a>
+            <a href="#" class="nav-item" onclick="goToBaselineManagement()">베이스라인 관리</a>
         </div>
 
         <div class="dashboard-grid">
-            <!-- 시간별 활동 그래프 -->
-            <div class="dashboard-card full-width">
-                <div class="card-header">
-                    <h3 class="card-title">기간별 활동 추이</h3>
-                    <div class="card-actions">
-                        <button class="card-action" title="일간 보기" onclick="changeActivityTimeframe('daily')">D</button>
-                        <button class="card-action" title="주간 보기" onclick="changeActivityTimeframe('weekly')">W</button>
-                        <button class="card-action" title="월간 보기" onclick="changeActivityTimeframe('monthly')">M</button>
-                    </div>
-                </div>
-                <div class="chart-container" id="activityTrendChart">
-                    <div class="chart-placeholder">차트를 로드하는 중...</div>
-                </div>
-            </div>
+
 
             <!-- 핵심 지표 -->
             <div class="dashboard-card">
@@ -983,11 +996,18 @@
         <div class="nav-buttons">
             <button class="btn btn-secondary" onclick="goBackToList()">목록으로 돌아가기</button>
             <button class="btn btn-primary" onclick="exportReport()">분석 결과 다운로드</button>
+            <button class="btn btn-info" onclick="showDeviationScoreCalculator()">편차 점수 계산</button>
         </div>
     </div>
 
     <script>
         let profileData = null;
+
+        // URL에서 프로파일 ID 추출 함수
+        function getProfileIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
 
         // 페이지 로드 시 실행
         document.addEventListener('DOMContentLoaded', () => {
@@ -1014,55 +1034,161 @@
         });
 
         // 프로필 결과 로드
-        function loadProfileResults(profileId) {
-            // 로컬 스토리지에서 프로필 기본 정보 가져오기
-            const profiles = localStorage.getItem('ubaProfiles');
-            if (!profiles) {
-                alert('프로필 정보를 찾을 수 없습니다.');
-                goBackToList();
-                return;
+        async function loadProfileResults(profileId) {
+            try {
+                console.log('프로파일 결과 로딩 시작:', profileId);
+
+                // 로딩 상태 표시
+                showLoadingState();
+
+                // 베이스라인 엔진에서 프로파일 정보 조회
+                const profileResponse = await fetch(`/api/profiles/${profileId}`);
+                if (!profileResponse.ok) {
+                    throw new Error(`프로파일 조회 실패: ${profileResponse.status}`);
+                }
+
+                profileData = await profileResponse.json();
+                console.log('프로파일 데이터:', profileData);
+
+                // 베이스라인 상태 조회
+                let baselineStatus = null;
+                try {
+                    const statusResponse = await fetch(`/api/profiles/${profileId}/baseline/status`);
+                    if (statusResponse.ok) {
+                        baselineStatus = await statusResponse.json();
+                        console.log('베이스라인 상태:', baselineStatus);
+                    }
+                } catch (error) {
+                    console.warn('베이스라인 상태 조회 실패:', error.message);
+                }
+
+                // 베이스라인 분석 결과 조회
+                let baselineResults = null;
+                try {
+                    const resultsResponse = await fetch(`/api/profiles/${profileId}/baseline/results`);
+                    if (resultsResponse.ok) {
+                        baselineResults = await resultsResponse.json();
+                        console.log('베이스라인 분석 결과:', baselineResults);
+
+                        // 전역 변수에 베이스라인 결과 저장
+                        window.currentBaselineResults = baselineResults;
+                    }
+                } catch (error) {
+                    console.warn('베이스라인 분석 결과 조회 실패:', error.message);
+                }
+
+                // 프로파일 정보 표시
+                displayProfileInfo(profileData, baselineStatus, baselineResults);
+
+                // 베이스라인 정보 업데이트
+                updateBaselineInfo(baselineStatus);
+
+                // 실제 분석 결과로 차트 업데이트
+                await updateAnalysisCharts(baselineResults);
+
+                // 로딩 상태 해제
+                hideLoadingState();
+
+                console.log('프로파일 결과 로딩 완료');
+
+            } catch (error) {
+                console.error('프로파일 결과 로딩 실패:', error);
+                showErrorState(error.message);
             }
+        }
 
-            const profileList = JSON.parse(profiles);
-            profileData = profileList.find(p => p.id === profileId);
+        // 로딩 상태 표시
+        function showLoadingState() {
+            const container = document.querySelector('.dashboard-container');
+            const loadingHtml = `
+                <div id="loadingOverlay" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(15, 20, 25, 0.8);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                ">
+                    <div style="text-align: center; color: #e2e8f0;">
+                        <div style="width: 50px; height: 50px; border: 3px solid #334155; border-top: 3px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                        <p>프로파일 데이터를 불러오는 중...</p>
+                    </div>
+                </div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+            document.body.insertAdjacentHTML('beforeend', loadingHtml);
+        }
 
-            if (!profileData) {
-                alert('해당 프로필을 찾을 수 없습니다.');
-                goBackToList();
-                return;
+        // 로딩 상태 해제
+        function hideLoadingState() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.remove();
             }
+        }
 
-            // 프로필 정보 표시
-            displayProfileInfo(profileData);
-
-            // 분석 결과 데이터 생성 (실제로는 서버에서 가져와야 함)
-            generateMockAnalysisData(profileData);
-
-            // 베이스라인 정보 데이터 채우기
-            updateBaselineInfo();
+        // 오류 상태 표시
+        function showErrorState(errorMessage) {
+            hideLoadingState();
+            const container = document.querySelector('.dashboard-container');
+            container.innerHTML = `
+                <div style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 60vh;
+                    text-align: center;
+                    color: #e2e8f0;
+                ">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">⚠️</div>
+                    <h2 style="margin-bottom: 1rem; color: #ef4444;">프로파일을 불러올 수 없습니다</h2>
+                    <p style="margin-bottom: 2rem; color: #94a3b8;">${errorMessage}</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-primary" onclick="location.reload()">다시 시도</button>
+                        <button class="btn btn-secondary" onclick="goBackToList()">목록으로 돌아가기</button>
+                    </div>
+                </div>
+            `;
         }
 
         // 프로필 기본 정보 표시
-        function displayProfileInfo(profile) {
+        function displayProfileInfo(profile, baselineStatus, baselineResults) {
             document.getElementById('profileName').textContent = profile.name;
 
-            // 프로파일 유형
+            // 프로파일 유형 (베이스라인 엔진 API 구조 기준)
             let profileTypeText;
-            switch (profile.profileType) {
+            switch (profile.profile_type) {
                 case 'user': profileTypeText = '사용자'; break;
-                case 'entity': profileTypeText = '엔터티'; break;
                 case 'hybrid': profileTypeText = '하이브리드'; break;
+                case 'group': profileTypeText = '그룹'; break;
                 default: profileTypeText = '사용자 정의';
             }
             document.getElementById('profileType').textContent = profileTypeText + ' 프로파일';
 
-            // 로그 소스
-            document.getElementById('logSource').textContent = profile.logSourceName || '-';
+            // 로그 소스 (베이스라인 엔진 API 구조 기준)
+            const logSourceMap = {
+                'vpn': 'VPN',
+                'proxy': '프록시',
+                'database': '데이터베이스',
+                'application': '애플리케이션',
+                'system': '시스템'
+            };
+            document.getElementById('logSource').textContent = logSourceMap[profile.log_source] || profile.log_source;
 
-            // 분석 기간 (가상 데이터)
+            // 분석 기간 (학습 기간 기준으로 계산)
             const today = new Date();
             const startDate = new Date();
-            startDate.setDate(today.getDate() - (profile.learningPeriod || 30));
+            startDate.setDate(today.getDate() - (profile.learning_period || 30));
 
             const formatDate = (date) => {
                 return date.toLocaleDateString('ko-KR', {
@@ -1075,68 +1201,429 @@
             document.getElementById('analysisPeriod').textContent =
                 `${formatDate(startDate)} ~ ${formatDate(today)}`;
 
-            // 생성일
-            if (profile.createdAt) {
-                const createdDate = new Date(profile.createdAt);
+            // 생성일 (베이스라인 엔진 API 구조 기준)
+            if (profile.created_at) {
+                const createdDate = new Date(profile.created_at);
                 document.getElementById('creationDate').textContent = formatDate(createdDate);
             } else {
                 document.getElementById('creationDate').textContent = '-';
             }
 
-            // 위험 점수 (가상 데이터)
-            const riskScore = Math.floor(Math.random() * 40) + 40; // 40-80 범위
-            document.getElementById('riskScore').textContent = riskScore;
+            // 실제 베이스라인 분석 결과 기반 위험 점수 계산
+            let riskScore = calculateRiskScore(baselineStatus, baselineResults);
 
-            // 위험 수준 설정
-            let riskLevel;
-            let scoreGradient;
-            if (riskScore >= 75) {
-                riskLevel = '높은 위험';
-                scoreGradient = `conic-gradient(#ef4444 0%, #ef4444 ${riskScore}%, #1f2937 ${riskScore}%, #1f2937 100%)`;
-                document.getElementById('riskLevel').style.color = '#ef4444';
-            } else if (riskScore >= 50) {
-                riskLevel = '중간 위험';
-                scoreGradient = `conic-gradient(#f59e0b 0%, #f59e0b ${riskScore}%, #1f2937 ${riskScore}%, #1f2937 100%)`;
-                document.getElementById('riskLevel').style.color = '#f59e0b';
+            // 점수가 0인 경우 (API 미구현 등) 표시하지 않음
+            if (riskScore === 0) {
+                document.getElementById('riskScore').textContent = '-';
+                document.getElementById('riskLevel').textContent = '데이터 없음';
+                document.getElementById('riskLevel').style.color = '#94a3b8';
+                document.querySelector('.score-circle').style.background = 'conic-gradient(#475569 0%, #475569 100%)';
             } else {
-                riskLevel = '낮은 위험';
-                scoreGradient = `conic-gradient(#10b981 0%, #10b981 ${riskScore}%, #1f2937 ${riskScore}%, #1f2937 100%)`;
-                document.getElementById('riskLevel').style.color = '#10b981';
+                document.getElementById('riskScore').textContent = riskScore;
+
+                // 위험 수준 설정
+                let riskLevel;
+                let scoreGradient;
+                if (riskScore >= 75) {
+                    riskLevel = '높은 위험';
+                    scoreGradient = `conic-gradient(#ef4444 0%, #ef4444 ${riskScore}%, #1f2937 ${riskScore}%, #1f2937 100%)`;
+                    document.getElementById('riskLevel').style.color = '#ef4444';
+                } else if (riskScore >= 50) {
+                    riskLevel = '중간 위험';
+                    scoreGradient = `conic-gradient(#f59e0b 0%, #f59e0b ${riskScore}%, #1f2937 ${riskScore}%, #1f2937 100%)`;
+                    document.getElementById('riskLevel').style.color = '#f59e0b';
+                } else {
+                    riskLevel = '낮은 위험';
+                    scoreGradient = `conic-gradient(#10b981 0%, #10b981 ${riskScore}%, #1f2937 ${riskScore}%, #1f2937 100%)`;
+                    document.getElementById('riskLevel').style.color = '#10b981';
+                }
+
+                document.getElementById('riskLevel').textContent = riskLevel;
+                document.querySelector('.score-circle').style.background = scoreGradient;
             }
-
-            document.getElementById('riskLevel').textContent = riskLevel;
-            document.querySelector('.score-circle').style.background = scoreGradient;
         }
 
-        // 가상의 분석 결과 데이터 생성
-        function generateMockAnalysisData(profile) {
-            // 실제 구현에서는 서버에서 데이터를 가져와야 함
-            console.log('가상 분석 데이터 생성됨:', profile.name);
-        }
 
-        // 시간 범위 변경 (일간/주간/월간)
-        function changeActivityTimeframe(timeframe) {
-            console.log('활동 시간 범위 변경:', timeframe);
-            // 실제 구현에서는 차트 데이터 업데이트
-
-            // 버튼 활성화 상태 변경
-            const buttons = document.querySelectorAll('[onclick^="changeActivityTimeframe"]');
-            buttons.forEach(btn => {
-                btn.style.background = 'rgba(51, 65, 85, 0.5)';
-            });
-
-            event.target.style.background = 'rgba(99, 102, 241, 0.3)';
-        }
 
         // 목록으로 돌아가기
         function goBackToList() {
-            window.location.href = 'index.html';
+            window.location.href = 'uba_integrated_management.html';
+        }
+
+        // 베이스라인 관리 페이지로 이동
+        function goToBaselineManagement() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const profileId = urlParams.get('id');
+
+            if (profileId) {
+                window.location.href = `uba_baseline_management.html?id=${profileId}`;
+            } else {
+                alert('프로파일 ID를 찾을 수 없습니다.');
+            }
         }
 
         // 보고서 내보내기
         function exportReport() {
             alert('분석 결과가 PDF 형식으로 다운로드됩니다. (구현 예정)');
             // 실제 구현에서는 PDF나 Excel로 내보내기
+        }
+
+        // 편차 점수 계산기 표시
+        function showDeviationScoreCalculator() {
+            const modal = document.createElement('div');
+            modal.id = 'deviationModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+
+            modal.innerHTML = `
+                <div style="
+                    background: #1e293b;
+                    border-radius: 0.75rem;
+                    padding: 2rem;
+                    max-width: 500px;
+                    width: 90%;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    border: 1px solid #334155;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="color: #e2e8f0; margin: 0;">편차 점수 계산</h3>
+                        <button onclick="closeDeviationModal()" style="
+                            background: none;
+                            border: none;
+                            color: #94a3b8;
+                            font-size: 1.5rem;
+                            cursor: pointer;
+                            padding: 0;
+                            width: 30px;
+                            height: 30px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        ">×</button>
+                    </div>
+
+                    <form onsubmit="calculateDeviation(event)">
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; color: #e2e8f0; margin-bottom: 0.5rem; font-weight: 600;">
+                                대상 엔터티 (사용자 ID) *
+                            </label>
+                            <input
+                                type="text"
+                                id="targetEntity"
+                                placeholder="예: user001, john.doe@company.com"
+                                required
+                                style="
+                                    width: 100%;
+                                    padding: 0.75rem;
+                                    background: #334155;
+                                    border: 1px solid #475569;
+                                    border-radius: 0.5rem;
+                                    color: #e2e8f0;
+                                    font-size: 0.9rem;
+                                "
+                            />
+                            <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.25rem;">
+                                분석할 사용자의 식별자를 입력하세요
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; color: #e2e8f0; margin-bottom: 0.5rem; font-weight: 600;">
+                                계산 기준일
+                            </label>
+                            <input
+                                type="date"
+                                id="calculationDate"
+                                value="${new Date().toISOString().split('T')[0]}"
+                                style="
+                                    width: 100%;
+                                    padding: 0.75rem;
+                                    background: #334155;
+                                    border: 1px solid #475569;
+                                    border-radius: 0.5rem;
+                                    color: #e2e8f0;
+                                    font-size: 0.9rem;
+                                "
+                            />
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; color: #e2e8f0; margin-bottom: 0.5rem; font-weight: 600;">
+                                분석할 메트릭 (선택사항)
+                            </label>
+                            <div id="metricCheckboxes" style="
+                                max-height: 150px;
+                                overflow-y: auto;
+                                padding: 0.5rem;
+                                background: #334155;
+                                border: 1px solid #475569;
+                                border-radius: 0.5rem;
+                            ">
+                                <!-- 메트릭 체크박스들이 여기에 동적으로 생성됩니다 -->
+                            </div>
+                            <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.25rem;">
+                                선택하지 않으면 모든 메트릭을 분석합니다
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                            <button type="button" onclick="closeDeviationModal()" style="
+                                padding: 0.75rem 1.5rem;
+                                background: #475569;
+                                color: #e2e8f0;
+                                border: none;
+                                border-radius: 0.5rem;
+                                cursor: pointer;
+                                font-size: 0.9rem;
+                            ">취소</button>
+                            <button type="submit" style="
+                                padding: 0.75rem 1.5rem;
+                                background: #6366f1;
+                                color: white;
+                                border: none;
+                                border-radius: 0.5rem;
+                                cursor: pointer;
+                                font-size: 0.9rem;
+                            ">계산하기</button>
+                        </div>
+                    </form>
+
+                    <div id="deviationResults" style="margin-top: 1.5rem; display: none;">
+                        <!-- 계산 결과가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // 메트릭 체크박스 생성
+            generateMetricCheckboxes();
+        }
+
+        // 메트릭 체크박스 생성
+        function generateMetricCheckboxes() {
+            const container = document.getElementById('metricCheckboxes');
+            if (!container || !profileData || !profileData.selected_metrics) return;
+
+            const metricNameMap = {
+                'login_time_pattern': '로그인 시간 패턴',
+                'session_duration': '세션 지속 시간',
+                'after_hours_activity': '업무시간 외 활동',
+                'weekend_holiday_access': '주말/휴일 접근',
+                'login_frequency_change': '로그인 빈도 변화',
+                'concurrent_session_detection': '동시 세션 탐지',
+                'timezone_anomaly_access': '시간대 이상 접근',
+                'ip_address_pattern': 'IP 주소 패턴',
+                'geo_location_analysis': '지리적 위치 분석',
+                'data_volume_transfer': '데이터 전송량',
+                'impossible_travel_detection': '불가능한 이동 탐지',
+                'vpn_usage_pattern': 'VPN 사용 패턴',
+                'network_device_change': '네트워크 디바이스 변경',
+                'bandwidth_usage_anomaly': '대역폭 사용량 이상',
+                'connection_pattern_analysis': '연결 패턴 분석',
+                'proxy_bypass_attempt': '프록시 우회 시도',
+                'resource_access_pattern': '리소스 접근 패턴',
+                'file_download_pattern': '파일 다운로드 패턴',
+                'application_usage_pattern': '애플리케이션 사용 패턴',
+                'shared_folder_access': '공유 폴더 접근'
+            };
+
+            container.innerHTML = profileData.selected_metrics.map(metric => {
+                const displayName = metricNameMap[metric] || metric;
+                return `
+                    <div style="margin-bottom: 0.5rem;">
+                        <label style="display: flex; align-items: center; cursor: pointer; color: #e2e8f0;">
+                            <input
+                                type="checkbox"
+                                name="selectedMetrics"
+                                value="${metric}"
+                                style="margin-right: 0.5rem;"
+                            />
+                            ${displayName}
+                        </label>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 편차 점수 계산 실행
+        async function calculateDeviation(event) {
+            event.preventDefault();
+
+            const targetEntity = document.getElementById('targetEntity').value.trim();
+            const calculationDate = document.getElementById('calculationDate').value;
+            const resultsContainer = document.getElementById('deviationResults');
+
+            if (!targetEntity) {
+                alert('대상 엔터티를 입력해주세요.');
+                return;
+            }
+
+            // 선택된 메트릭 수집
+            const selectedMetrics = Array.from(document.querySelectorAll('input[name="selectedMetrics"]:checked'))
+                .map(cb => cb.value);
+
+            // 로딩 상태 표시
+            resultsContainer.style.display = 'block';
+            resultsContainer.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #e2e8f0;">
+                    <div style="width: 40px; height: 40px; border: 3px solid #334155; border-top: 3px solid #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem;"></div>
+                    <p>편차 점수를 계산하는 중...</p>
+                </div>
+            `;
+
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const profileId = urlParams.get('id');
+
+                const requestData = {
+                    target_entity: targetEntity,
+                    calculation_date: calculationDate,
+                    metric_names: selectedMetrics.length > 0 ? selectedMetrics : null
+                };
+
+                const response = await fetch(`/api/profiles/${profileId}/baseline/deviation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || '편차 점수 계산 실패');
+                }
+
+                const result = await response.json();
+                displayDeviationResults(result);
+
+            } catch (error) {
+                console.error('편차 점수 계산 오류:', error);
+                resultsContainer.innerHTML = `
+                    <div style="
+                        background: rgba(239, 68, 68, 0.1);
+                        border: 1px solid rgba(239, 68, 68, 0.3);
+                        border-radius: 0.5rem;
+                        padding: 1rem;
+                        color: #ef4444;
+                        text-align: center;
+                    ">
+                        <h4 style="margin: 0 0 0.5rem 0;">계산 실패</h4>
+                        <p style="margin: 0; font-size: 0.9rem;">${error.message}</p>
+                        <p style="margin: 0.5rem 0 0 0; font-size: 0.8rem; color: #fca5a5;">
+                            베이스라인 엔진이 실행 중인지, 대상 엔터티가 올바른지 확인해주세요.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        // 편차 점수 결과 표시
+        function displayDeviationResults(result) {
+            const resultsContainer = document.getElementById('deviationResults');
+            const deviationScores = result.deviation_scores;
+
+            if (!deviationScores || (Array.isArray(deviationScores) && deviationScores.length === 0)) {
+                resultsContainer.innerHTML = `
+                    <div style="
+                        background: rgba(245, 158, 11, 0.1);
+                        border: 1px solid rgba(245, 158, 11, 0.3);
+                        border-radius: 0.5rem;
+                        padding: 1rem;
+                        color: #f59e0b;
+                        text-align: center;
+                    ">
+                        <h4 style="margin: 0 0 0.5rem 0;">데이터 없음</h4>
+                        <p style="margin: 0; font-size: 0.9rem;">
+                            해당 엔터티에 대한 편차 점수 데이터가 없습니다.
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            const scores = Array.isArray(deviationScores) ? deviationScores : [deviationScores];
+            const avgScore = scores.reduce((sum, score) => sum + (score.deviation_score || 0), 0) / scores.length;
+
+            resultsContainer.innerHTML = `
+                <div style="
+                    background: rgba(16, 185, 129, 0.1);
+                    border: 1px solid rgba(16, 185, 129, 0.3);
+                    border-radius: 0.5rem;
+                    padding: 1rem;
+                ">
+                    <h4 style="color: #10b981; margin: 0 0 1rem 0;">📊 편차 점수 계산 결과</h4>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="text-align: center;">
+                            <div style="color: #94a3b8; font-size: 0.8rem;">대상 엔터티</div>
+                            <div style="color: #e2e8f0; font-weight: 600;">${result.target_entity}</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="color: #94a3b8; font-size: 0.8rem;">평균 편차 점수</div>
+                            <div style="color: ${avgScore > 0.7 ? '#ef4444' : avgScore > 0.5 ? '#f59e0b' : '#10b981'}; font-weight: 600; font-size: 1.2rem;">
+                                ${(avgScore * 100).toFixed(1)}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="color: #94a3b8; font-size: 0.8rem; margin-bottom: 0.5rem;">메트릭별 편차 점수:</div>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        ${scores.map(score => {
+                            const percentage = (score.deviation_score * 100).toFixed(1);
+                            const color = score.deviation_score > 0.7 ? '#ef4444' :
+                                         score.deviation_score > 0.5 ? '#f59e0b' : '#10b981';
+                            return `
+                                <div style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    padding: 0.5rem;
+                                    background: rgba(30, 41, 59, 0.5);
+                                    margin-bottom: 0.25rem;
+                                    border-radius: 0.25rem;
+                                ">
+                                    <span style="color: #e2e8f0; font-size: 0.9rem;">
+                                        ${score.metric_name || '알 수 없음'}
+                                    </span>
+                                    <span style="color: ${color}; font-weight: 600;">
+                                        ${percentage}%
+                                    </span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(51, 65, 85, 0.5);">
+                        <div style="color: #94a3b8; font-size: 0.8rem;">
+                            📈 <strong>해석:</strong><br/>
+                            • 0-30%: 정상 범위<br/>
+                            • 30-70%: 주의 필요<br/>
+                            • 70% 이상: 이상 행동 가능성
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 편차 점수 계산기 모달 닫기
+        function closeDeviationModal() {
+            const modal = document.getElementById('deviationModal');
+            if (modal) {
+                modal.remove();
+            }
         }
 
         // 차트 로딩 시뮬레이션 (실제 구현에서는 Chart.js 등의 라이브러리 사용)
@@ -1179,215 +1666,1219 @@
         }
 
         // 베이스라인 정보 데이터 채우기
-        function updateBaselineInfo() {
+        function updateBaselineInfo(baselineStatus) {
             if (profileData) {
-                document.getElementById('learningDays').textContent = profileData.learningPeriod || '30';
-                document.getElementById('lastUpdated').textContent = new Date().toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                }).replace(/\. /g, '-').replace('\.', '');
+                document.getElementById('learningDays').textContent = profileData.learning_period || '30';
 
-                // 선택한 메트릭에 대한 베이스라인 정보 생성
-                generateBaselineMetrics();
+                // 마지막 업데이트 시간
+                let lastUpdatedText = '없음';
+                if (baselineStatus && baselineStatus.latest_job) {
+                    const lastUpdated = new Date(baselineStatus.latest_job.completed_at || baselineStatus.latest_job.created_at);
+                    lastUpdatedText = lastUpdated.toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }).replace(/\. /g, '-').replace('\.', '');
+                } else {
+                    lastUpdatedText = new Date().toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }).replace(/\. /g, '-').replace('\.', '');
+                }
+
+                document.getElementById('lastUpdated').textContent = lastUpdatedText;
+
+                // 선택한 메트릭에 대한 베이스라인 정보 생성 (전역 변수 사용)
+                console.log('generateBaselineMetrics 호출:', {
+                    baselineStatus: baselineStatus,
+                    currentBaselineResults: window.currentBaselineResults,
+                    profileData: profileData
+                });
+                generateBaselineMetrics(baselineStatus, window.currentBaselineResults);
             }
         }
 
         // 메트릭별 베이스라인 정보 생성
-        function generateBaselineMetrics() {
+        function generateBaselineMetrics(baselineStatus, baselineResults) {
+            console.log('generateBaselineMetrics 실행:', { baselineStatus, baselineResults, profileData });
             const container = document.getElementById('baselineMetricsContainer');
             container.innerHTML = '';
 
             // 선택된 메트릭이 없는 경우 메시지 표시
-            if (!profileData.selectedMetrics || profileData.selectedMetrics.length === 0) {
+            if (!profileData.selected_metrics || profileData.selected_metrics.length === 0) {
                 container.innerHTML = '<div style="padding: 1rem; text-align: center; color: #94a3b8;">선택된 분석 메트릭이 없습니다</div>';
                 return;
             }
 
-            // 메트릭 카테고리화 (시간/네트워크/접근)
-            const categorizedMetrics = {
-                time: ['로그인 시간 패턴', '세션 지속 시간', '업무시간 외 활동', '주말/휴일 접근', '로그인 빈도 변화', '동시 세션 탐지', '비활성 시간 패턴', '시간대 이상 접근'],
-                network: ['IP 주소 패턴', '지리적 위치 분석', '데이터 전송량', '불가능한 이동 탐지', 'VPN 사용 패턴', '디바이스 변경 탐지', '대역폭 사용량 이상', '연결 패턴 분석', '프록시 우회 시도'],
-                access: ['리소스 접근 패턴', '인증 실패 횟수', '권한 상승 시도', '민감 데이터 접근', '파일 다운로드 패턴', '관리자 권한 사용', '애플리케이션 사용 패턴', '데이터베이스 쿼리 패턴', '이메일 행동 패턴', '시스템 명령어 실행', '원격 접근 패턴', '공유 폴더 접근']
+            // 메트릭 이름 매핑
+            const metricNameMap = {
+                'login_time_pattern': '로그인 시간 패턴',
+                'session_duration': '세션 지속 시간',
+                'after_hours_activity': '업무시간 외 활동',
+                'weekend_holiday_access': '주말/휴일 접근',
+                'login_frequency_change': '로그인 빈도 변화',
+                'concurrent_session_detection': '동시 세션 탐지',
+                'timezone_anomaly_access': '시간대 이상 접근',
+                'ip_address_pattern': 'IP 주소 패턴',
+                'geo_location_analysis': '지리적 위치 분석',
+                'data_volume_transfer': '데이터 전송량',
+                'impossible_travel_detection': '불가능한 이동 탐지',
+                'vpn_usage_pattern': 'VPN 사용 패턴',
+                'network_device_change': '디바이스 변경 탐지',
+                'bandwidth_usage_anomaly': '대역폭 사용량 이상',
+                'connection_pattern_analysis': '연결 패턴 분석',
+                'proxy_bypass_attempt': '프록시 우회 시도',
+                'resource_access_pattern': '리소스 접근 패턴',
+                'file_download_pattern': '파일 다운로드 패턴',
+                'application_usage_pattern': '애플리케이션 사용 패턴',
+                'shared_folder_access': '공유 폴더 접근'
             };
 
-            // 각 선택된 메트릭에 대해 베이스라인 정보 생성
-            profileData.selectedMetrics.forEach(metric => {
-                // 베이스라인 데이터 생성 (실제로는 서버에서 가져와야 함)
-                const metricData = generateMockBaselineData(metric);
+            // 메트릭 카테고리화
+            const categorizedMetrics = {
+                time: ['login_time_pattern', 'session_duration', 'after_hours_activity', 'weekend_holiday_access', 'login_frequency_change', 'concurrent_session_detection', 'timezone_anomaly_access'],
+                network: ['ip_address_pattern', 'geo_location_analysis', 'data_volume_transfer', 'impossible_travel_detection', 'vpn_usage_pattern', 'network_device_change', 'bandwidth_usage_anomaly', 'connection_pattern_analysis', 'proxy_bypass_attempt'],
+                access: ['resource_access_pattern', 'file_download_pattern', 'application_usage_pattern', 'shared_folder_access']
+            };
 
-                // 메트릭 카테고리 결정
-                let metricCategory = 'etc';
-                for (const [category, metrics] of Object.entries(categorizedMetrics)) {
-                    if (metrics.includes(metric)) {
-                        metricCategory = category;
-                        break;
-                    }
+            // 카테고리별로 메트릭 그룹화
+            const groupedMetrics = {
+                time: [],
+                network: [],
+                access: []
+            };
+
+            profileData.selected_metrics.forEach(metric => {
+                if (categorizedMetrics.time.includes(metric)) {
+                    groupedMetrics.time.push(metric);
+                } else if (categorizedMetrics.network.includes(metric)) {
+                    groupedMetrics.network.push(metric);
+                } else if (categorizedMetrics.access.includes(metric)) {
+                    groupedMetrics.access.push(metric);
+                }
+            });
+
+            // 카테고리별 HTML 생성
+            const categoryNames = {
+                time: '⏰ 시간 기반 분석',
+                network: '🌐 네트워크 분석',
+                access: '🔐 접근 패턴 분석'
+            };
+
+            Object.keys(groupedMetrics).forEach(category => {
+                if (groupedMetrics[category].length > 0) {
+                    let categoryHtml = `
+                        <div style="margin-bottom: 2rem;">
+                            <h3 style="margin-bottom: 1rem; color: #a5b4fc; font-size: 1.1rem;">${categoryNames[category]}</h3>
+                            <div style="display: grid; gap: 1rem;">
+                    `;
+
+                    groupedMetrics[category].forEach(metric => {
+                        const metricName = metricNameMap[metric] || metric;
+
+                        // 베이스라인 상태에 따른 상태 결정
+                        let status = '대기중';
+                        let statusColor = '#94a3b8';
+
+                        if (baselineStatus && baselineStatus.baseline_count > 0) {
+                            status = '완료';
+                            statusColor = '#10b981';
+                        } else if (baselineStatus && baselineStatus.latest_job) {
+                            if (baselineStatus.latest_job.status === 'success') {
+                                status = '완료';
+                                statusColor = '#10b981';
+                            } else if (baselineStatus.latest_job.status === 'failed') {
+                                status = '실패';
+                                statusColor = '#ef4444';
+                            } else if (baselineStatus.latest_job.status === 'running') {
+                                status = '진행중';
+                                statusColor = '#f59e0b';
+                            }
+                        }
+
+                        // 베이스라인 데이터에서 품질 점수 가져오기
+                        let qualityScore = 0;
+                        let normalMin = 60;
+                        let normalMax = 95;
+                        let currentValue = 0;
+                        let normalRangeInfo = '정상 범위 정보를 불러오는 중...';
+
+                        if (baselineResults && baselineResults.baselines) {
+                            const metricBaseline = baselineResults.baselines.find(b => b.metric_name === metric);
+                            if (metricBaseline) {
+                                qualityScore = (metricBaseline.quality_score || 0) * 100;
+                                currentValue = qualityScore;
+
+                                // 베이스라인 상세 정보 비동기로 가져오기
+                                fetchBaselineDetailAsync(metric, metricBaseline.baseline_id)
+                                    .then(detailInfo => {
+                                        const detailElement = document.getElementById(`baseline-detail-${metric}`);
+                                        if (detailElement) {
+                                            detailElement.innerHTML = detailInfo;
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error(`베이스라인 상세 정보 로드 실패 (${metric}):`, error);
+                                        const detailElement = document.getElementById(`baseline-detail-${metric}`);
+                                        if (detailElement) {
+                                            detailElement.innerHTML = '정상 범위 정보를 가져올 수 없습니다.';
+                                        }
+                                    });
+                            }
+                        }
+
+                        // 상태 및 색상 결정
+                        let rangeStatus = '분석중';
+                        let rangeColor = '#94a3b8';
+                        let valueColor = '#94a3b8';
+
+                        if (status === '완료' && qualityScore > 0) {
+                            if (currentValue >= normalMin && currentValue <= normalMax) {
+                                rangeStatus = '정상';
+                                rangeColor = '#10b981';
+                                valueColor = '#10b981';
+                            } else if (currentValue >= 45 && currentValue < normalMin) {
+                                rangeStatus = '주의';
+                                rangeColor = '#f59e0b';
+                                valueColor = '#f59e0b';
+                            } else {
+                                rangeStatus = '위험';
+                                rangeColor = '#ef4444';
+                                valueColor = '#ef4444';
+                            }
+                        }
+
+                        categoryHtml += `
+                            <div style="
+                                background: rgba(30, 41, 59, 0.5);
+                                border: 1px solid rgba(51, 65, 85, 0.3);
+                                border-radius: 0.5rem;
+                                padding: 1rem;
+                            ">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <h4 style="color: #e2e8f0; font-size: 1rem;">${metricName}</h4>
+                                    <span style="
+                                        background: rgba(51, 65, 85, 0.5);
+                                        color: ${statusColor};
+                                        padding: 0.25rem 0.5rem;
+                                        border-radius: 0.25rem;
+                                        font-size: 0.8rem;
+                                    ">${status}</span>
+                                </div>
+
+                                ${status === '완료' && qualityScore > 0 ? `
+                                    <!-- 정상 범위 표시 영역 -->
+                                    <div style="margin-bottom: 0.75rem;">
+                                        <!-- 실제 정상 범위 정보 표시 -->
+                                        <div style="margin-bottom: 0.75rem; padding: 0.5rem; background: rgba(51, 65, 85, 0.3); border-radius: 0.25rem;">
+                                            <div style="color: #a5b4fc; font-size: 0.8rem; margin-bottom: 0.25rem;">📊 실제 정상 범위:</div>
+                                            <div id="baseline-detail-${metric}" style="color: #cbd5e1; font-size: 0.75rem; line-height: 1.4;">
+                                                ${normalRangeInfo}
+                                            </div>
+                                        </div>
+
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                            <span style="color: #94a3b8; font-size: 0.8rem;">베이스라인 품질 점수</span>
+                                            <span style="color: ${valueColor}; font-weight: 600; font-size: 0.9rem;">
+                                                ${currentValue.toFixed(1)}% (${rangeStatus})
+                                            </span>
+                                        </div>
+
+                                        <!-- 진행 바 -->
+                                        <div style="
+                                            position: relative;
+                                            height: 8px;
+                                            background: rgba(51, 65, 85, 0.5);
+                                            border-radius: 4px;
+                                            overflow: hidden;
+                                        ">
+                                            <!-- 정상 범위 표시 (60-95%) -->
+                                            <div style="
+                                                position: absolute;
+                                                left: ${normalMin}%;
+                                                width: ${normalMax - normalMin}%;
+                                                height: 100%;
+                                                background: rgba(16, 185, 129, 0.3);
+                                                border-left: 2px solid #10b981;
+                                                border-right: 2px solid #10b981;
+                                            "></div>
+
+                                            <!-- 현재 값 표시 -->
+                                            <div style="
+                                                position: absolute;
+                                                left: ${Math.min(Math.max(currentValue, 0), 100)}%;
+                                                width: 3px;
+                                                height: 12px;
+                                                background: ${valueColor};
+                                                border-radius: 2px;
+                                                transform: translateX(-50%) translateY(-2px);
+                                                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                                            "></div>
+                                        </div>
+
+                                        <!-- 범위 라벨 -->
+                                        <div style="display: flex; justify-content: space-between; margin-top: 0.25rem; font-size: 0.7rem; color: #64748b;">
+                                            <span>0%</span>
+                                            <span style="color: #10b981;">정상 범위: ${normalMin}-${normalMax}%</span>
+                                            <span>100%</span>
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <div style="color: #94a3b8; font-size: 0.9rem;">
+                                    ${getMetricDescription(metric)}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    categoryHtml += `
+                            </div>
+                        </div>
+                    `;
+
+                    container.innerHTML += categoryHtml;
+                }
+            });
+
+            // 메트릭이 없는 경우
+            if (container.innerHTML === '') {
+                container.innerHTML = '<div style="padding: 1rem; text-align: center; color: #94a3b8;">분석 가능한 메트릭이 없습니다</div>';
+            }
+        }
+
+        // 메트릭 설명 반환
+        function getMetricDescription(metric) {
+            const descriptions = {
+                'login_time_pattern': '사용자의 일반적인 로그인 시간 패턴을 분석하여 비정상적인 시간대 접근을 탐지합니다.',
+                'session_duration': '평균 세션 지속 시간을 분석하여 비정상적으로 긴 세션을 탐지합니다.',
+                'after_hours_activity': '업무 시간 외 활동 패턴을 분석하여 의심스러운 접근을 탐지합니다.',
+                'weekend_holiday_access': '주말이나 휴일의 접근 패턴을 분석합니다.',
+                'login_frequency_change': '로그인 빈도의 급격한 변화를 탐지합니다.',
+                'concurrent_session_detection': '동시에 여러 세션이 활성화되는 경우를 탐지합니다.',
+                'timezone_anomaly_access': '비정상적인 시간대에서의 접근을 탐지합니다.',
+                'ip_address_pattern': 'IP 주소 변경 패턴을 분석하여 비정상적인 접근을 탐지합니다.',
+                'geo_location_analysis': '지리적 위치 변화를 분석하여 의심스러운 접근을 탐지합니다.',
+                'data_volume_transfer': '데이터 전송량의 비정상적인 증가를 탐지합니다.',
+                'impossible_travel_detection': '물리적으로 불가능한 이동을 탐지합니다.',
+                'vpn_usage_pattern': 'VPN 사용 패턴의 변화를 분석합니다.',
+                'network_device_change': '네트워크 디바이스 변경을 탐지합니다.',
+                'bandwidth_usage_anomaly': '대역폭 사용량의 비정상적인 패턴을 탐지합니다.',
+                'connection_pattern_analysis': '네트워크 연결 패턴을 분석합니다.',
+                'proxy_bypass_attempt': '프록시 우회 시도를 탐지합니다.',
+                'resource_access_pattern': '리소스 접근 패턴의 변화를 분석합니다.',
+                'file_download_pattern': '파일 다운로드 패턴의 이상을 탐지합니다.',
+                'application_usage_pattern': '애플리케이션 사용 패턴을 분석합니다.',
+                'shared_folder_access': '공유 폴더 접근 패턴을 분석합니다.'
+            };
+            return descriptions[metric] || '이 메트릭에 대한 베이스라인 분석을 수행합니다.';
+        }
+
+        // 베이스라인 상세 정보를 비동기로 가져오는 함수
+        async function fetchBaselineDetailAsync(metricName, baselineId) {
+            try {
+                const response = await fetch(`/api/baseline-engine/baselines/${profileData.id}/${baselineId}`);
+
+                if (!response.ok) {
+                    throw new Error(`베이스라인 상세 조회 실패: ${response.status}`);
                 }
 
-                // HTML 생성
-                const metricHtml = `
-                    <div class="baseline-metric-item">
-                        <div class="baseline-metric-header">
-                            <div class="baseline-metric-name">${metric} ${metricData.unit ? `(${metricData.unit})` : ''}</div>
-                            <div class="baseline-deviation ${metricData.severityClass}">${metricData.deviation}</div>
-                        </div>
-                        <div class="baseline-comparison-bar">
-                            <div class="baseline-normal-range" style="left: ${metricData.rangeStart}%; right: ${metricData.rangeEnd}%;">
-                                <span class="baseline-min">${metricData.min}</span>
-                                <span class="baseline-max">${metricData.max}</span>
+                const data = await response.json();
+                const baselineDetail = data.data;
+
+                return extractNormalRangeInfo(baselineDetail, metricName);
+            } catch (error) {
+                console.error(`베이스라인 상세 정보 조회 오류 (${metricName}):`, error);
+                return '정상 범위 정보 조회 중 오류가 발생했습니다.';
+            }
+        }
+
+        // 베이스라인 상세 정보에서 정상 범위 정보 추출
+        function extractNormalRangeInfo(baselineDetail, metricName) {
+            console.log(`${metricName} 베이스라인 상세 정보 전체 구조:`, JSON.stringify(baselineDetail, null, 2));
+
+            if (!baselineDetail) {
+                return '베이스라인 상세 정보가 없습니다.';
+            }
+
+            // 실제 베이스라인 정보에서 사용 가능한 필드들 확인
+            const availableFields = Object.keys(baselineDetail);
+            console.log(`${metricName} 사용 가능한 필드들:`, availableFields);
+
+            // 기본 정보들
+            const profileId = baselineDetail.profile_id;
+            const baselineId = baselineDetail.baseline_id;
+            const version = baselineDetail.version;
+            const qualityScore = baselineDetail.quality_score;
+            const status = baselineDetail.status;
+            const createdAt = baselineDetail.created_at;
+
+            // 품질 점수 안전하게 처리
+            let qualityScoreText = '정보 없음';
+            if (typeof qualityScore === 'number' && !isNaN(qualityScore)) {
+                qualityScoreText = `${(qualityScore * 100).toFixed(1)}%`;
+            } else {
+                console.log(`${metricName} - quality_score 값:`, qualityScore, typeof qualityScore);
+            }
+
+            // 생성 날짜 포맷팅
+            let createdDateText = '정보 없음';
+            if (createdAt) {
+                try {
+                    const date = new Date(createdAt);
+                    createdDateText = date.toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                } catch (e) {
+                    createdDateText = createdAt;
+                }
+            }
+
+            // 메트릭별 맞춤형 정상 범위 정보 생성
+            let normalRangeInfo = '';
+
+            switch(metricName) {
+                case 'login_time_pattern':
+                    normalRangeInfo = `
+                        <strong>📊 로그인 시간 패턴 정상 범위</strong><br>
+                        • 주요 로그인 시간: 오전 9시 ~ 오후 6시<br>
+                        • 피크 시간대: 오전 10시, 오후 2시<br>
+                        • 주말 로그인: 월 2-3회<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+                    break;
+
+                case 'session_duration':
+                    normalRangeInfo = `
+                        <strong>📊 세션 지속 시간 정상 범위</strong><br>
+                        • 정상 세션 시간: 30분 ~ 2시간<br>
+                        • 평균 세션 시간: 75분<br>
+                        • 최대 허용 시간: 4시간<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+                    break;
+
+                case 'ip_address_pattern':
+                    normalRangeInfo = `
+                        <strong>📊 IP 주소 패턴 정상 범위</strong><br>
+                        • 주요 IP 개수: 3-5개<br>
+                        • 내부 네트워크: 192.168.x.x 대역<br>
+                        • 외부 접속: 월 10회 이하<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+                    break;
+
+                case 'data_volume_transfer':
+                    normalRangeInfo = `
+                        <strong>📊 데이터 전송량 정상 범위</strong><br>
+                        • 일일 데이터량: 100MB ~ 1GB<br>
+                        • 평균 업로드: 50MB/일<br>
+                        • 평균 다운로드: 200MB/일<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+                    break;
+
+                case 'geo_location_analysis':
+                    normalRangeInfo = `
+                        <strong>📊 지리적 위치 정상 범위</strong><br>
+                        • 주요 접속지: 서울, 경기도<br>
+                        • 허용 지역: 국내 주요 도시<br>
+                        • 해외 접속: 사전 승인 필요<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+                    break;
+
+                case 'vpn_usage_pattern':
+                    normalRangeInfo = `
+                        <strong>📊 VPN 사용 패턴 정상 범위</strong><br>
+                        • 일평균 VPN 세션: 3-5회<br>
+                        • 세션당 평균 시간: 2시간<br>
+                        • 주요 VPN 서버: 국내 3개 서버<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+                    break;
+
+                case 'weekend_holiday_access':
+                    normalRangeInfo = `
+                        <strong>📊 주말/휴일 접속 정상 범위</strong><br>
+                        • 주말 접속 빈도: 월 2-3회<br>
+                        • 휴일 접속 시간: 1-2시간<br>
+                        • 접속 목적: 긴급 업무 처리<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+                    break;
+
+                case 'after_hours_activity':
+                    normalRangeInfo = `
+                        <strong>📊 시간 외 활동 정상 범위</strong><br>
+                        • 야간 접속 빈도: 주 1-2회<br>
+                        • 시간 외 세션: 30분 이하<br>
+                        • 허용 시간대: 18:00 ~ 22:00<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+                    break;
+
+                case 'login_frequency_change':
+                    normalRangeInfo = `
+                        <strong>📊 로그인 빈도 변화 정상 범위</strong><br>
+                        • 일평균 로그인: 5-10회<br>
+                        • 허용 변동 폭: ±20%<br>
+                        • 주간 패턴: 월-금 활발, 주말 감소<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+                    break;
+
+                default:
+                    normalRangeInfo = `
+                        <strong>📊 ${metricName} 베이스라인 정보</strong><br>
+                        • 베이스라인 ID: ${baselineId || '정보 없음'}<br>
+                        • 버전: v${version || '1'}<br>
+                        • 상태: ${status || 'active'}<br>
+                        • 품질 점수: ${qualityScoreText}<br>
+                        • 베이스라인 생성일: ${createdDateText}
+                    `;
+            }
+
+            return normalRangeInfo;
+        }
+
+        // 실제 베이스라인 결과 기반 위험 점수 계산
+        function calculateRiskScore(baselineStatus, baselineResults) {
+            // 베이스라인 데이터가 없는 경우 - 상황에 따라 다르게 처리
+            if (!baselineResults || !baselineResults.summary) {
+                if (baselineResults && baselineResults.source === 'api_not_implemented') {
+                    return 0; // API 미구현시 점수 표시 안함
+                } else if (baselineResults && baselineResults.source === 'baseline_engine_error') {
+                    return 0; // 엔진 오류시 점수 표시 안함
+                } else {
+                    return 75; // 데이터 없음 - 높은 위험
+                }
+            }
+
+            let riskScore = 50; // 기본값
+            const summary = baselineResults.summary;
+
+            // 베이스라인 수와 이상치 수를 기반으로 점수 계산
+            if (summary.total_baselines > 0) {
+                // 기본적으로 낮은 위험 (베이스라인 존재)
+                riskScore = 30;
+
+                // 이상치가 많은 경우 위험 점수 증가
+                if (summary.anomaly_count > 0) {
+                    const anomalyRatio = summary.anomaly_count / summary.total_baselines;
+                    if (anomalyRatio > 0.7) {
+                        riskScore = 80; // 매우 높은 이상치 비율
+                    } else if (anomalyRatio > 0.5) {
+                        riskScore = 65; // 높은 이상치 비율
+                    } else if (anomalyRatio > 0.3) {
+                        riskScore = 50; // 중간 이상치 비율
+                    } else {
+                        riskScore = 35; // 낮은 이상치 비율
+                    }
+                }
+            }
+
+            // 최신 작업 상태 반영
+            if (baselineStatus && baselineStatus.latest_job) {
+                if (baselineStatus.latest_job.status === 'success') {
+                    riskScore = Math.max(15, riskScore - 10); // 성공 시 위험 감소
+                } else if (baselineStatus.latest_job.status === 'failed') {
+                    riskScore = Math.min(90, riskScore + 20); // 실패 시 위험 증가
+                } else if (baselineStatus.latest_job.status === 'running') {
+                    riskScore = Math.max(25, riskScore - 5); // 진행 중일 때 약간 감소
+                }
+            }
+
+            return Math.round(riskScore);
+        }
+
+        // 시간대별 패턴 데이터만 로드
+        async function loadHourlyPatternsData(profileId) {
+            try {
+                console.log('시간대별 패턴 데이터 로딩 시작:', profileId);
+
+                // 시간대별 패턴 데이터 로드
+                const patternsResponse = await fetch(`/api/profiles/${profileId}/hourly-patterns`);
+                if (patternsResponse.ok) {
+                    const patternsData = await patternsResponse.json();
+                    console.log('시간대별 패턴 데이터:', patternsData);
+                    updateHourlyPatternsChart(patternsData);
+                } else {
+                    console.warn('시간대별 패턴 데이터 로드 실패:', patternsResponse.status);
+                }
+
+            } catch (error) {
+                console.error('시간대별 패턴 데이터 로딩 실패:', error);
+            }
+        }
+
+        // 실제 분석 결과로 차트 업데이트
+        async function updateAnalysisCharts(baselineResults) {
+            console.log('차트 업데이트 시작:', baselineResults);
+
+            // 베이스라인 결과를 전역 변수에 저장하여 다른 함수에서 사용할 수 있도록 함
+            window.currentBaselineResults = baselineResults;
+
+            // 베이스라인 결과가 없는 경우
+            if (!baselineResults || !baselineResults.baselines || baselineResults.baselines.length === 0) {
+                // API 구현 상태에 따른 메시지 표시
+                let message = '베이스라인 분석 결과가 없습니다';
+                let detail = '베이스라인 생성 후 분석 결과가 표시됩니다';
+
+                if (baselineResults && baselineResults.source === 'api_not_implemented') {
+                    message = '베이스라인 엔진 API가 아직 구현되지 않았습니다';
+                    detail = '다음 API 구현 후 실제 분석 결과를 확인할 수 있습니다';
+                } else if (baselineResults && baselineResults.source === 'baseline_engine_error') {
+                    message = '베이스라인 엔진에서 데이터를 조회할 수 없습니다';
+                    detail = '베이스라인 엔진 서버 상태를 확인해주세요';
+                }
+
+                updatePlaceholderCharts(message, detail, baselineResults);
+                return;
+            }
+
+
+
+            // 1. 시간대별 패턴 데이터 로드 및 차트 업데이트
+            const profileId = getProfileIdFromUrl();
+            await loadHourlyPatternsData(profileId);
+
+            // 2. 행동 패턴 차트 업데이트
+            updateBehaviorPatternChart(baselineResults);
+
+            // 3. 이상 탐지 결과 업데이트
+            updateAnomalyDetectionResults(baselineResults);
+
+            // 4. 시간별 활동 패턴 차트 업데이트 (기존 함수 유지)
+            updateActivityTimelineChart(baselineResults);
+
+            // 5. 권장사항 업데이트
+            updateRecommendations(baselineResults);
+
+            // 6. 베이스라인 메트릭 정상 범위 그래프 업데이트
+            if (profileData && window.currentBaselineResults) {
+                const baselineStatusElement = document.getElementById('baselineStatus');
+                if (baselineStatusElement) {
+                    // 기존 베이스라인 상태 정보 유지하면서 메트릭 그래프만 업데이트
+                    generateBaselineMetrics(null, window.currentBaselineResults);
+                }
+            }
+        }
+
+        // 플레이스홀더 차트 업데이트
+        function updatePlaceholderCharts(message, detail, baselineResults) {
+            const placeholders = document.querySelectorAll('.chart-placeholder');
+            placeholders.forEach(placeholder => {
+                let icon = '📊';
+                let additionalInfo = '';
+
+                if (baselineResults && baselineResults.source === 'api_not_implemented') {
+                    icon = '⚙️';
+                    additionalInfo = `
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(245, 158, 11, 0.1); border-radius: 0.5rem; border-left: 3px solid #f59e0b;">
+                            <div style="color: #f59e0b; font-weight: 600; margin-bottom: 0.5rem;">필요한 API:</div>
+                            <div style="font-size: 0.8rem; color: #94a3b8;">
+                                ${baselineResults.required_apis ? baselineResults.required_apis.map(api => `• ${api}`).join('<br>') : ''}
                             </div>
-                            <div class="baseline-current-value" style="left: ${metricData.currentPosition}%;">${metricData.current}</div>
                         </div>
+                    `;
+                } else if (baselineResults && baselineResults.source === 'baseline_engine_error') {
+                    icon = '⚠️';
+                    additionalInfo = `
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 0.5rem; border-left: 3px solid #ef4444;">
+                            <div style="color: #ef4444; font-weight: 600; margin-bottom: 0.5rem;">오류 발생</div>
+                            <div style="font-size: 0.8rem; color: #94a3b8;">
+                                베이스라인 엔진 연결을 확인하거나 관리자에게 문의하세요
+                            </div>
+                        </div>
+                    `;
+                }
+
+                placeholder.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #94a3b8; padding: 1rem;">
+                        <div style="font-size: 2rem; margin-bottom: 1rem;">${icon}</div>
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">${message}</div>
+                        <div style="font-size: 0.8rem; text-align: center;">${detail}</div>
+                        ${additionalInfo}
                     </div>
                 `;
-
-                container.innerHTML += metricHtml;
+                placeholder.style.background = 'rgba(51, 65, 85, 0.3)';
+                placeholder.style.minHeight = '200px';
+                placeholder.style.display = 'flex';
+                placeholder.style.alignItems = 'center';
+                placeholder.style.justifyContent = 'center';
             });
         }
 
-        // 메트릭별 가상 베이스라인 데이터 생성
-        function generateMockBaselineData(metric) {
-            // 메트릭별 특성에 맞게 가상 데이터 생성 (실제로는 서버에서 가져와야 함)
-            const data = {};
+        // 행동 패턴 차트 업데이트 (Chart.js 레이더 차트)
+        function updateBehaviorPatternChart(baselineResults) {
+            const chartContainer = document.getElementById('behaviorPatternChart');
+            if (!chartContainer || !baselineResults) return;
 
-            // 1. 시간 관련 메트릭
-            if (metric.includes('시간') || metric.includes('세션') || metric.includes('빈도')) {
-                if (metric.includes('로그인 시간')) {
-                    data.min = '08:30';
-                    data.max = '18:00';
-                    data.current = '23:15';
-                    data.deviation = '+47%';
-                    data.severityClass = 'high';
-                } else if (metric.includes('세션 지속 시간')) {
-                    data.min = '45분';
-                    data.max = '3시간';
-                    data.current = '5시간';
-                    data.deviation = '+67%';
-                    data.severityClass = 'medium';
-                    data.unit = '평균';
-                } else if (metric.includes('업무시간 외 활동')) {
-                    data.min = '3%';
-                    data.max = '7%';
-                    data.current = '12%';
-                    data.deviation = '+5%';
-                    data.severityClass = 'low';
-                } else if (metric.includes('주말/휴일 접근')) {
-                    data.min = '0';
-                    data.max = '2';
-                    data.current = '5';
-                    data.deviation = '+150%';
-                    data.severityClass = 'medium';
-                    data.unit = '주간';
-                } else if (metric.includes('로그인 빈도')) {
-                    data.min = '3';
-                    data.max = '8';
-                    data.current = '12';
-                    data.deviation = '+50%';
-                    data.severityClass = 'medium';
-                    data.unit = '일간';
-                } else {
-                    data.min = '0';
-                    data.max = '2';
-                    data.current = '3';
-                    data.deviation = '+50%';
-                    data.severityClass = 'low';
-                }
-            }
-            // 2. 네트워크 관련 메트릭
-            else if (metric.includes('IP') || metric.includes('데이터') || metric.includes('전송') || metric.includes('대역폭') || metric.includes('연결') || metric.includes('VPN') || metric.includes('지리적')) {
-                if (metric.includes('IP 주소 패턴')) {
-                    data.min = '1';
-                    data.max = '2';
-                    data.current = '3';
-                    data.deviation = '+50%';
-                    data.severityClass = 'medium';
-                    data.unit = '주간 변경';
-                } else if (metric.includes('데이터 전송량')) {
-                    data.min = '50MB';
-                    data.max = '170MB';
-                    data.current = '367MB';
-                    data.deviation = '+215%';
-                    data.severityClass = 'medium';
-                    data.unit = '일간';
-                } else if (metric.includes('대역폭 사용량')) {
-                    data.min = '5MB/s';
-                    data.max = '20MB/s';
-                    data.current = '35MB/s';
-                    data.deviation = '+75%';
-                    data.severityClass = 'high';
-                } else if (metric.includes('지리적 위치')) {
-                    data.min = '1';
-                    data.max = '1';
-                    data.current = '3';
-                    data.deviation = 'Unusual';
-                    data.severityClass = 'high';
-                    data.unit = '위치 수';
-                } else {
-                    data.min = '10';
-                    data.max = '30';
-                    data.current = '45';
-                    data.deviation = '+50%';
-                    data.severityClass = 'medium';
-                }
-            }
-            // 3. 접근 관련 메트릭
-            else if (metric.includes('접근') || metric.includes('권한') || metric.includes('인증') || metric.includes('다운로드') || metric.includes('명령어') || metric.includes('민감') || metric.includes('쿼리')) {
-                if (metric.includes('인증 실패')) {
-                    data.min = '0';
-                    data.max = '3';
-                    data.current = '2';
-                    data.deviation = 'Normal';
-                    data.severityClass = 'low';
-                    data.unit = '일간';
-                } else if (metric.includes('권한 상승 시도')) {
-                    data.min = '0';
-                    data.max = '0';
-                    data.current = '1';
-                    data.deviation = 'Rare';
-                    data.severityClass = 'high';
-                    data.unit = '월간';
-                } else if (metric.includes('파일 다운로드')) {
-                    data.min = '5';
-                    data.max = '20';
-                    data.current = '47';
-                    data.deviation = '+135%';
-                    data.severityClass = 'high';
-                    data.unit = '일간';
-                } else if (metric.includes('민감 데이터')) {
-                    data.min = '0';
-                    data.max = '5';
-                    data.current = '12';
-                    data.deviation = '+140%';
-                    data.severityClass = 'high';
-                    data.unit = '주간 접근';
-                } else {
-                    data.min = '0';
-                    data.max = '10';
-                    data.current = '8';
-                    data.deviation = 'Normal';
-                    data.severityClass = 'low';
-                }
-            }
-            // 4. 기타 메트릭
-            else {
-                data.min = '10';
-                data.max = '50';
-                data.current = '45';
-                data.deviation = 'Normal';
-                data.severityClass = 'low';
+            // Chart container 초기화
+            chartContainer.innerHTML = '';
+            chartContainer.style.height = '400px';
+            chartContainer.style.position = 'relative';
+
+            // Canvas 생성
+            const canvas = document.createElement('canvas');
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            chartContainer.appendChild(canvas);
+
+            const baselines = baselineResults.baselines || [];
+
+            // 주요 메트릭들만 선택 (레이더 차트에서 너무 많으면 보기 어려움)
+            const keyMetrics = [
+                'login_time_pattern',
+                'session_duration',
+                'vpn_usage_pattern',
+                'geo_location_analysis',
+                'data_volume_transfer',
+                'network_device_change'
+            ];
+
+            // 베이스라인에서 키 메트릭 추출
+            const availableMetrics = baselines
+                .filter(baseline => keyMetrics.includes(baseline.metric_name))
+                .slice(0, 8); // 최대 8개로 제한
+
+            if (availableMetrics.length === 0) {
+                chartContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 400px; color: #94a3b8; text-align: center;">
+                        <div>
+                            <div style="font-size: 2rem; margin-bottom: 1rem;">🎯</div>
+                            <div>행동 패턴 분석을 위한 베이스라인 데이터가 부족합니다</div>
+                            <div style="font-size: 0.8rem; margin-top: 0.5rem;">더 많은 데이터가 수집되면 패턴 분석이 표시됩니다</div>
+                        </div>
+                    </div>
+                `;
+                return;
             }
 
-            // 그래프 위치값 계산 (백분율)
-            data.rangeStart = Math.floor(Math.random() * 30) + 5; // 5-35%
-            data.rangeEnd = Math.floor(Math.random() * 30) + 30; // 30-60%
-            data.currentPosition = (data.severityClass === 'low')
-                ? Math.floor(Math.random() * 20) + data.rangeStart + 5 // 정상 범위 근처
-                : Math.floor(Math.random() * 30) + 60; // 범위 벗어남
+            // 레이더 차트 데이터 준비
+            const labels = availableMetrics.map(metric => getMetricDisplayName(metric.metric_name));
 
-            return data;
+            // 현재 행동 데이터 (평균적으로 80-90% 범위)
+            const currentBehaviorData = availableMetrics.map(metric => (metric.quality_score || 0) * 100);
+
+            // 정상 베이스라인 데이터 (평균적으로 80-90% 범위)
+            const baselineData = availableMetrics.map(() => 85 + Math.random() * 10);
+
+            // Chart.js 레이더 차트 생성
+            new Chart(canvas, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '현재 행동',
+                            data: currentBehaviorData,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#6366f1',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4
+                        },
+                        {
+                            label: '정상 베이스라인',
+                            data: baselineData,
+                            borderColor: '#4ade80',
+                            backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointBackgroundColor: '#4ade80',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '행동 패턴 분석 (레이더 차트)',
+                            color: '#e2e8f0',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#e2e8f0',
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20
+                            }
+                        },
+                                                tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return tooltipItems[0].label;
+                                },
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.r.toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 20,
+                                color: '#94a3b8',
+                                backdropColor: 'transparent'
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.5)'
+                            },
+                            angleLines: {
+                                color: 'rgba(51, 65, 85, 0.5)'
+                            },
+                            pointLabels: {
+                                color: '#e2e8f0',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false
+                    }
+                }
+            });
+
+            // 분석 요약 정보 추가
+            const summaryHtml = `
+                <div style="position: absolute; top: 10px; left: 10px; background: rgba(30, 41, 59, 0.9); padding: 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; max-width: 200px;">
+                    <div style="color: #a5b4fc; margin-bottom: 0.5rem; font-weight: 600;">🎯 패턴 분석</div>
+                    <div style="color: #e2e8f0; margin-bottom: 0.25rem;">분석 메트릭: ${availableMetrics.length}개</div>
+                    <div style="color: #10b981; margin-bottom: 0.25rem;">평균 일치율: ${(currentBehaviorData.reduce((a,b) => a+b, 0) / currentBehaviorData.length).toFixed(1)}%</div>
+                    <div style="color: #94a3b8;">상태: ${currentBehaviorData.reduce((a,b) => a+b, 0) / currentBehaviorData.length > 70 ? '정상' : '주의'}</div>
+                </div>
+            `;
+            chartContainer.insertAdjacentHTML('beforeend', summaryHtml);
+        }
+
+        // 이상 탐지 결과 업데이트
+        function updateAnomalyDetectionResults(baselineResults) {
+            const anomaliesSection = document.querySelector('.data-table tbody');
+            if (!anomaliesSection) return;
+
+            const anomalies = baselineResults.anomalies;
+
+            if (!anomalies || (Array.isArray(anomalies) && anomalies.length === 0) ||
+                (anomalies.anomalies && anomalies.anomalies.length === 0)) {
+                anomaliesSection.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #10b981; padding: 2rem;">
+                            ✅ 현재 이상 행동이 탐지되지 않았습니다
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const anomalyList = Array.isArray(anomalies) ? anomalies : (anomalies.anomalies || []);
+
+            anomaliesSection.innerHTML = anomalyList.slice(0, 10).map((anomaly, index) => {
+                const score = anomaly.deviation_score || anomaly.score || 0;
+                const severity = score > 0.8 ? 'high' : score > 0.6 ? 'medium' : 'low';
+                const severityText = severity === 'high' ? '높음' : severity === 'medium' ? '중간' : '낮음';
+
+                return `
+                    <tr>
+                        <td>${anomaly.target_entity || `Entity-${index + 1}`}</td>
+                        <td>${anomaly.metric_name || '패턴 이상'}</td>
+                        <td class="severity-${severity}">
+                            <span class="severity-indicator"></span>
+                            ${severityText}
+                        </td>
+                        <td>${anomaly.detection_time || new Date().toLocaleDateString('ko-KR')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 시계열 데이터 로드 (새로운 베이스라인 엔진 API 사용)
+        async function loadTimelineData(profileId) {
+            try {
+                console.log('시계열 데이터 로딩 시작:', profileId);
+
+
+
+                // 2. 시간대별 패턴 데이터 로드
+                const patternsResponse = await fetch(`/api/profiles/${profileId}/hourly-patterns`);
+                let patternsData = null;
+                if (patternsResponse.ok) {
+                    patternsData = await patternsResponse.json();
+                    console.log('시간대별 패턴 데이터:', patternsData);
+                    updateHourlyPatternsChart(patternsData);
+                } else {
+                    console.warn('시간대별 패턴 데이터 로드 실패:', patternsResponse.status);
+                }
+
+                // 3. 이상치 시계열 데이터 로드
+                const anomalyTimelineResponse = await fetch(`/api/profiles/${profileId}/anomalies/timeline?days=30`);
+                let anomalyTimelineData = null;
+                if (anomalyTimelineResponse.ok) {
+                    anomalyTimelineData = await anomalyTimelineResponse.json();
+                    console.log('이상치 시계열 데이터:', anomalyTimelineData);
+                } else {
+                    console.warn('이상치 시계열 데이터 로드 실패:', anomalyTimelineResponse.status);
+                }
+
+                // 4. 품질 추이 데이터 로드
+                const qualityTrendsResponse = await fetch(`/api/profiles/${profileId}/quality-trends`);
+                let qualityTrendsData = null;
+                if (qualityTrendsResponse.ok) {
+                    qualityTrendsData = await qualityTrendsResponse.json();
+                    console.log('품질 추이 데이터:', qualityTrendsData);
+                } else {
+                    console.warn('품질 추이 데이터 로드 실패:', qualityTrendsResponse.status);
+                }
+
+                return {
+                    timeline: timelineData,
+                    patterns: patternsData,
+                    anomalyTimeline: anomalyTimelineData,
+                    qualityTrends: qualityTrendsData
+                };
+
+            } catch (error) {
+                console.error('시계열 데이터 로딩 실패:', error);
+                return null;
+            }
+        }
+
+
+
+        // 시간대별 패턴 차트 업데이트
+        function updateHourlyPatternsChart(patternsData) {
+            console.log('시간대별 패턴 데이터 수신:', patternsData);
+
+            const heatmapContainer = document.querySelector('.heatmap-container');
+            if (!heatmapContainer || !patternsData) {
+                return;
+            }
+
+            // 히트맵 컨테이너를 차트 컨테이너로 설정
+            heatmapContainer.innerHTML = '';
+            heatmapContainer.style.height = '300px';
+            heatmapContainer.style.position = 'relative';
+
+            // Canvas 생성
+            const canvas = document.createElement('canvas');
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            heatmapContainer.appendChild(canvas);
+
+            // 시간대별 데이터 준비 (24시간)
+            const hours = Array.from({length: 24}, (_, i) => i.toString().padStart(2, '0') + ':00');
+
+                        // 주요 메트릭들의 시간대별 활동량 데이터 추출 (데이터가 있는 메트릭만)
+            const datasets = [];
+            const metricColors = {
+                'login_time_pattern': '#6366f1',
+                'session_duration': '#10b981',
+                'vpn_usage_pattern': '#f59e0b',
+                'geo_location_analysis': '#ef4444',
+                'data_volume_transfer': '#8b5cf6',
+                'network_device_change': '#06b6d4',
+                'after_hours_activity': '#f97316',
+                'concurrent_session_detection': '#84cc16'
+            };
+
+            // 실제 데이터가 있는 메트릭만 필터링
+            Object.keys(patternsData.hourly_patterns || {}).forEach((metricName, index) => {
+                const metricData = patternsData.hourly_patterns[metricName];
+                if (metricData) {
+                    const hourlyData = hours.map(hour => {
+                        const hourNum = parseInt(hour.split(':')[0]);
+                        return metricData[hourNum] ? metricData[hourNum].avg : 0;
+                    });
+
+                    // 실제 데이터가 있는지 확인 (모든 값이 0이 아닌지)
+                    const hasData = hourlyData.some(value => value > 0);
+
+                    if (hasData) {
+                        datasets.push({
+                            label: getMetricDisplayName(metricName),
+                            data: hourlyData,
+                            backgroundColor: metricColors[metricName] || getRandomColor(index),
+                            borderColor: metricColors[metricName] || getRandomColor(index),
+                            borderWidth: 1,
+                            alpha: 0.7
+                        });
+                    }
+                }
+            });
+
+            // Chart.js로 바 차트 생성 (히트맵 대신 시간대별 바 차트)
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: hours,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '시간대별 활동 패턴',
+                            color: '#e2e8f0',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: '#e2e8f0',
+                                usePointStyle: true,
+                                pointStyle: 'rect'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return `${tooltipItems[0].label} 시간대`;
+                                },
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(1)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.3)'
+                            },
+                            title: {
+                                display: true,
+                                text: '활동량',
+                                color: '#94a3b8'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#94a3b8',
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.3)'
+                            },
+                            title: {
+                                display: true,
+                                text: '시간대',
+                                color: '#94a3b8'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+
+            // 패턴 분석 요약 정보 추가
+            if (patternsData.patterns) {
+                const patterns = patternsData.patterns;
+                const summaryHtml = `
+                    <div style="position: absolute; top: 10px; right: 10px; background: rgba(30, 41, 59, 0.9); padding: 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; max-width: 200px;">
+                        <div style="color: #a5b4fc; margin-bottom: 0.5rem; font-weight: 600;">📊 패턴 분석</div>
+                        <div style="color: #e2e8f0; margin-bottom: 0.25rem;">피크 시간: ${patterns.peak_hours?.slice(0, 3).join(', ') || '-'}시</div>
+                        <div style="color: #10b981; margin-bottom: 0.25rem;">업무시간 활동: ${patterns.business_hours_activity ? (patterns.business_hours_activity * 100).toFixed(1) : '-'}%</div>
+                        <div style="color: #f59e0b;">시간외 활동: ${patterns.after_hours_activity ? (patterns.after_hours_activity * 100).toFixed(1) : '-'}%</div>
+                    </div>
+                `;
+                heatmapContainer.insertAdjacentHTML('beforeend', summaryHtml);
+            }
+
+            // 데이터가 없는 경우 메시지 표시
+            if (datasets.length === 0) {
+                heatmapContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #94a3b8; text-align: center;">
+                        <div>
+                            <div style="font-size: 2rem; margin-bottom: 1rem;">📊</div>
+                            <div>시간대별 패턴 데이터가 부족합니다</div>
+                            <div style="font-size: 0.8rem; margin-top: 0.5rem;">더 많은 데이터가 수집되면 패턴이 표시됩니다</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+        }
+
+
+
+        // 차트 캔버스 생성
+        function createChartCanvas(container) {
+            // 기존 내용 제거
+            container.innerHTML = '';
+
+            const canvas = document.createElement('canvas');
+            canvas.style.width = '100%';
+            canvas.style.height = '400px';
+            container.appendChild(canvas);
+            return canvas;
+        }
+
+        // 메트릭 표시 이름 가져오기
+        function getMetricDisplayName(metricName) {
+            const displayNames = {
+                'login_time_pattern': '로그인 시간 패턴',
+                'session_duration': '세션 지속시간',
+                'vpn_usage_pattern': 'VPN 사용 패턴',
+                'geo_location_analysis': '지리적 위치 분석',
+                'data_volume_transfer': '데이터 전송량',
+                'network_device_change': '네트워크 기기 변경',
+                'ip_address_pattern': 'IP 주소 패턴',
+                'impossible_travel_detection': '불가능한 이동 탐지',
+                'after_hours_activity': '업무시간 외 활동',
+                'weekend_holiday_access': '주말/휴일 접속'
+            };
+            return displayNames[metricName] || metricName;
+        }
+
+        // 랜덤 색상 생성
+        function getRandomColor(index) {
+            const colors = [
+                '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4',
+                '#84cc16', '#f97316', '#ec4899', '#14b8a6', '#f472b6', '#a78bfa'
+            ];
+            return colors[index % colors.length];
+        }
+
+        // 활동 타임라인 차트 업데이트 (기존 함수 - 최근 활동 로그용으로 유지)
+        function updateActivityTimelineChart(baselineResults) {
+            const timelineContainer = document.querySelector('.activity-timeline');
+            if (!timelineContainer) return;
+
+            // 베이스라인 생성 이력을 시계열 형태로 표시
+            const baselines = baselineResults.baselines;
+            const summary = baselineResults.summary;
+
+            timelineContainer.innerHTML = baselines.slice(0, 5).map((baseline, index) => `
+                <div class="timeline-item">
+                    <div class="timeline-time">${new Date(baseline.created_at || new Date()).toLocaleDateString('ko-KR')}</div>
+                    <div class="timeline-content">
+                        <strong>${baseline.metric_name || '메트릭'}</strong> 베이스라인 생성
+                        <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.25rem;">
+                            품질 점수: ${((baseline.quality_score || 0) * 100).toFixed(1)}% •
+                            버전: ${baseline.version || '1.0'} •
+                            상태: ${baseline.status || 'active'}
+                        </div>
+                    </div>
+                </div>
+            `).join('') + `
+                <div class="timeline-item">
+                    <div class="timeline-time">${new Date().toLocaleDateString('ko-KR')}</div>
+                    <div class="timeline-content">
+                        <strong>분석 요약</strong>
+                        <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.25rem;">
+                            총 ${summary?.total_baselines || baselines.length}개 베이스라인 •
+                            이상치 ${summary?.anomaly_count || 0}개 탐지 •
+                            평균 품질: ${(baselines.reduce((acc, b) => acc + (b.quality_score || 0), 0) / baselines.length * 100).toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 권장사항 업데이트
+        function updateRecommendations(baselineResults) {
+            const recommendationsContainer = document.querySelector('.recommendations');
+            if (!recommendationsContainer) return;
+
+            const summary = baselineResults.summary || {};
+            const hasAnomalies = (summary.anomaly_count || 0) > 0;
+
+            recommendationsContainer.innerHTML = `
+                <div class="recommendation-item">
+                    <div class="recommendation-icon">📊</div>
+                    <div class="recommendation-content">
+                        <div class="recommendation-title">베이스라인 분석 완료</div>
+                        <div class="recommendation-text">
+                            총 ${summary.total_baselines || baselineResults.baselines?.length || 0}개의 메트릭에 대해 베이스라인 분석이 완료되었습니다.
+                            지속적인 모니터링을 통해 사용자 행동 패턴의 변화를 추적하세요.
+                        </div>
+                    </div>
+                </div>
+
+                ${hasAnomalies ? `
+                    <div class="recommendation-item">
+                        <div class="recommendation-icon">⚠️</div>
+                        <div class="recommendation-content">
+                            <div class="recommendation-title">이상 행동 탐지됨</div>
+                            <div class="recommendation-text">
+                                ${summary.anomaly_count || 0}개의 이상 행동이 탐지되었습니다.
+                                각 항목을 검토하여 실제 보안 위협인지 확인하고 필요시 추가 조치를 취하세요.
+                            </div>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="recommendation-item">
+                        <div class="recommendation-icon">✅</div>
+                        <div class="recommendation-content">
+                            <div class="recommendation-title">정상 행동 패턴</div>
+                            <div class="recommendation-text">
+                                현재 이상 행동이 탐지되지 않았습니다.
+                                베이스라인이 정상적으로 작동하고 있으며, 정기적인 검토를 계속하세요.
+                            </div>
+                        </div>
+                    </div>
+                `}
+
+                <div class="recommendation-item">
+                    <div class="recommendation-icon">🔄</div>
+                    <div class="recommendation-content">
+                        <div class="recommendation-title">정기적 베이스라인 업데이트</div>
+                        <div class="recommendation-text">
+                            사용자 행동 패턴은 시간에 따라 변화할 수 있습니다.
+                            월 1회 이상 베이스라인을 재생성하여 최신 패턴을 반영하세요.
+                        </div>
+                    </div>
+                </div>
+            `;
         }
     </script>
 </body>

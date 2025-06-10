@@ -1,0 +1,225 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Cursor AI - Frontend 개발 규칙
+
+## 🎯 기본 원칙
+- **성능 우선**: 번들 크기 최적화와 로딩 속도를 항상 고려
+- **사용자 경험 우선**: 직관적이고 접근 가능한 인터페이스 구현
+- **일관성 유지**: 디자인 시스템과 코딩 스타일 가이드 준수
+- **반응형 디자인**: 모든 디바이스에서 완벽한 동작 보장
+
+## 📁 프로젝트 구조
+```
+src/
+├── components/          # 재사용 가능한 컴포넌트
+│   ├── ui/             # 기본 UI 컴포넌트
+│   ├── forms/          # 폼 관련 컴포넌트
+│   └── layout/         # 레이아웃 컴포넌트
+├── pages/              # 페이지 컴포넌트
+├── hooks/              # 커스텀 훅
+├── utils/              # 유틸리티 함수
+├── types/              # TypeScript 타입 정의
+├── stores/             # 상태 관리
+├── services/           # API 서비스
+└── assets/             # 정적 자원
+```
+
+## 🔧 기술 스택 & 도구
+- **Framework**: React 18+ 또는 Next.js 14+
+- **언어**: TypeScript 필수
+- **스타일링**: Tailwind CSS + shadcn/ui
+- **상태 관리**: Zustand 또는 Redux Toolkit
+- **데이터 페칭**: TanStack Query (React Query)
+- **폼 관리**: React Hook Form + Zod
+- **테스팅**: Vitest + React Testing Library
+
+## 📋 코딩 규칙
+
+### 컴포넌트 작성
+```typescript
+// ✅ 좋은 예시
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'danger';
+  size?: 'sm' | 'md' | 'lg';
+  children: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}
+
+export const Button: React.FC<ButtonProps> = ({
+  variant = 'primary',
+  size = 'md',
+  children,
+  onClick,
+  disabled = false,
+}) => {
+  return (
+    <button
+      className={cn(
+        'rounded-md font-medium transition-colors',
+        variants[variant],
+        sizes[size],
+        disabled && 'opacity-50 cursor-not-allowed'
+      )}
+      onClick={onClick}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+};
+```
+
+### 네이밍 규칙
+- **컴포넌트**: PascalCase (`UserProfile`, `NavigationBar`)
+- **함수/변수**: camelCase (`handleSubmit`, `isLoading`)
+- **상수**: UPPER_SNAKE_CASE (`API_BASE_URL`, `MAX_RETRY_COUNT`)
+- **파일명**: kebab-case (`user-profile.tsx`, `api-client.ts`)
+
+### 커스텀 훅
+```typescript
+// ✅ 좋은 예시
+export const useAuth = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const login = useCallback(async (credentials: LoginCredentials) => {
+    try {
+      setIsLoading(true);
+      const response = await authService.login(credentials);
+      setUser(response.user);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error.message };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  return { user, isLoading, login };
+};
+```
+
+## 🎨 UI/UX 가이드라인
+
+### 반응형 디자인
+```typescript
+// ✅ Tailwind CSS 반응형 클래스 사용
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {items.map(item => (
+    <Card key={item.id} className="p-4">
+      <h3 className="text-lg md:text-xl font-semibold">{item.title}</h3>
+    </Card>
+  ))}
+</div>
+```
+
+### 접근성 (a11y)
+- 모든 상호작용 요소에 적절한 `aria-label` 추가
+- 키보드 네비게이션 지원
+- 색상 대비 비율 4.5:1 이상 유지
+- 시맨틱 HTML 태그 사용
+
+### 성능 최적화
+```typescript
+// ✅ React.memo 사용
+export const ExpensiveComponent = React.memo<Props>(({ data }) => {
+  return <div>{/* 복잡한 렌더링 로직 */}</div>;
+});
+
+// ✅ useMemo로 계산 최적화
+const expensiveValue = useMemo(() => {
+  return heavyCalculation(data);
+}, [data]);
+
+// ✅ lazy loading
+const LazyComponent = lazy(() => import('./LazyComponent'));
+```
+
+## 🔄 상태 관리
+
+### Zustand 스토어 구조
+```typescript
+interface AppState {
+  user: User | null;
+  theme: 'light' | 'dark';
+  setUser: (user: User | null) => void;
+  toggleTheme: () => void;
+}
+
+export const useAppStore = create<AppState>((set, get) => ({
+  user: null,
+  theme: 'light',
+  setUser: (user) => set({ user }),
+  toggleTheme: () => set((state) => ({
+    theme: state.theme === 'light' ? 'dark' : 'light'
+  })),
+}));
+```
+
+## 🌐 API 통신
+
+### TanStack Query 사용
+```typescript
+// ✅ API 훅 예시
+export const useUsers = (filters?: UserFilters) => {
+  return useQuery({
+    queryKey: ['users', filters],
+    queryFn: () => userService.getUsers(filters),
+    staleTime: 5 * 60 * 1000, // 5분
+    retry: 3,
+  });
+};
+
+export const useCreateUser = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: userService.createUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+};
+```
+
+## 🧪 테스트 규칙
+
+### 컴포넌트 테스트
+```typescript
+// ✅ 테스트 예시
+describe('Button Component', () => {
+  it('renders with correct text', () => {
+    render(<Button>Click me</Button>);
+    expect(screen.getByText('Click me')).toBeInTheDocument();
+  });
+  it('calls onClick handler when clicked', () => {
+    const handleClick = vi.fn();
+    render(<Button onClick={handleClick}>Click me</Button>);
+
+    fireEvent.click(screen.getByText('Click me'));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+## 🚫 피해야 할 것들
+- **인라인 스타일**: Tailwind CSS 사용 권장
+- **any 타입**: 구체적인 타입 정의 필수
+- **useEffect 남용**: 적절한 경우에만 사용
+- **prop drilling**: Context나 상태 관리 라이브러리 활용
+- **console.log**: 디버깅 후 제거 필수
+
+## 📝 코드 품질 도구
+- **ESLint**: 코드 스타일 검사
+- **Prettier**: 코드 포매팅
+- **TypeScript**: 타입 안정성
+- **Husky**: Git 훅을 통한 품질 검사
+
+## 📚 문서화
+- 복잡한 컴포넌트는 JSDoc으로 문서화
+- README.md에 프로젝트 설정 및 실행 방법 명시
+- 중요한 비즈니스 로직은 주석으로 설명

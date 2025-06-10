@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db/db');
 const { BaselineEngineAPIClient } = require('../services/baseline-engine-client');
+const fetch = require('node-fetch');
 
 // 베이스라인 엔진 클라이언트 인스턴스 생성
 const baselineClient = new BaselineEngineAPIClient(
@@ -482,6 +483,559 @@ router.delete('/:id', async (req, res) => {
   } catch (err) {
     console.error('프로파일 삭제 오류:', err);
     res.status(500).json({ error: '프로파일 삭제 중 오류가 발생했습니다.' });
+  }
+});
+
+/**
+ * POST /api/profiles/baseline/manual - 수동 베이스라인 생성
+ * 특정 프로파일에 대해 수동으로 베이스라인을 생성합니다.
+ */
+router.post('/baseline/manual', async (req, res) => {
+  try {
+    const { profileId, profileIds, force = false } = req.body;
+
+    console.log('===== 수동 베이스라인 생성 요청 =====');
+    console.log('단일 프로파일 ID:', profileId);
+    console.log('다중 프로파일 IDs:', profileIds);
+    console.log('강제 실행:', force);
+
+    // 프로파일 ID 배열 구성 (단일 또는 다중 지원)
+    let targetProfileIds = [];
+    if (profileId) {
+      targetProfileIds = [profileId];
+    } else if (profileIds && Array.isArray(profileIds)) {
+      targetProfileIds = profileIds;
+    } else {
+      return res.status(400).json({ error: '프로파일 ID 또는 프로파일 ID 배열이 필요합니다.' });
+    }
+
+    if (targetProfileIds.length === 0) {
+      return res.status(400).json({ error: '최소 하나의 프로파일 ID가 필요합니다.' });
+    }
+
+    console.log('대상 프로파일 IDs:', targetProfileIds);
+
+            // 베이스라인 엔진 API 호출 시도
+    try {
+      const jobs = await baselineClient.generateManualBaseline(targetProfileIds, force);
+      console.log('베이스라인 엔진에서 수동 베이스라인 생성 성공:', jobs);
+
+      // jobs 배열 응답 처리
+      if (Array.isArray(jobs) && jobs.length > 0) {
+        return res.status(201).json({
+          success: true,
+          message: '베이스라인 생성이 시작되었습니다.',
+          jobs: jobs,
+          count: jobs.length,
+          estimatedDuration: '15-30분'
+        });
+      } else {
+        throw new Error('베이스라인 엔진에서 유효한 작업이 생성되지 않았습니다.');
+      }
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 API 호출 실패:', baselineError.message);
+
+      // 베이스라인 엔진이 응답하지 않는 경우 시뮬레이션 응답
+      const simulatedJobs = targetProfileIds.map(id => {
+        const jobId = `manual_baseline_${id}_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+        return {
+          job_id: jobId,
+          profile_id: id,
+          status: 'in_progress',
+          created_at: new Date().toISOString(),
+          estimated_duration: '15-30분'
+        };
+      });
+
+      console.log(`베이스라인 생성 시뮬레이션 시작 (${simulatedJobs.length}개 작업)`);
+
+      // 베이스라인 엔진이 사용 불가능한 경우 시뮬레이션으로 처리
+      console.log(`베이스라인 생성 시뮬레이션 시작 (${simulatedJobs.length}개 작업) - 베이스라인 엔진만 사용`);
+      // 로컬 DB 저장 없이 베이스라인 엔진 응답만 반환
+
+      return res.status(201).json({
+        success: true,
+        message: '베이스라인 생성이 시작되었습니다. (시뮬레이션 모드)',
+        jobs: simulatedJobs,
+        count: simulatedJobs.length,
+        estimatedDuration: '15-30분',
+        simulation: true
+      });
+    }
+
+    // 예상치 못한 경우
+    throw new Error('베이스라인 생성 요청 처리 중 예상치 못한 오류가 발생했습니다.');
+
+  } catch (err) {
+    console.error('수동 베이스라인 생성 오류:', err);
+    res.status(500).json({
+      error: '베이스라인 생성 중 오류가 발생했습니다.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/profiles/baseline/jobs/:jobId - 베이스라인 생성 작업 상태 조회
+ */
+router.get('/baseline/jobs/:jobId', async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    console.log(`베이스라인 작업 상태 조회: ${jobId}`);
+
+    // 베이스라인 엔진에서 작업 상태 조회 시도
+    try {
+      const result = await baselineClient.getBaselineJobStatus(jobId);
+      console.log('베이스라인 엔진에서 작업 상태 조회 성공:', result);
+      return res.json(result);
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 작업 상태 조회 실패:', baselineError.message);
+
+      // 베이스라인 엔진에서 작업 상태를 찾을 수 없는 경우 기본 응답 반환
+      return res.status(404).json({
+        error: '베이스라인 엔진에서 작업 상태를 조회할 수 없습니다.',
+        job_id: jobId,
+        details: '베이스라인 엔진의 작업 상태 조회 API가 아직 구현되지 않았을 수 있습니다.',
+        suggestion: '베이스라인 생성은 백그라운드에서 진행되며, 프로파일 목록에서 베이스라인 상태를 확인하세요.'
+      });
+    }
+
+  } catch (err) {
+    console.error('베이스라인 작업 상태 조회 오류:', err);
+    res.status(500).json({
+      error: '작업 상태 조회 중 오류가 발생했습니다.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/profiles/baseline/history - 베이스라인 실행 이력 조회
+ */
+router.get('/baseline/history', async (req, res) => {
+  try {
+    const { profile_id, status, limit = 50, offset = 0 } = req.query;
+
+    console.log('베이스라인 실행 이력 조회:', { profile_id, status, limit, offset });
+
+    // 베이스라인 엔진에서 실행 이력 조회 시도
+    try {
+      const filters = {};
+      if (profile_id) filters.profile_id = profile_id;
+      if (status) filters.status = status;
+      filters.limit = parseInt(limit);
+      filters.offset = parseInt(offset);
+
+      const result = await baselineClient.getBaselineExecutionHistory(filters);
+      console.log('베이스라인 엔진에서 실행 이력 조회 성공');
+      return res.json(result);
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 실행 이력 조회 실패:', baselineError.message);
+    }
+
+    // 베이스라인 엔진에서 이력을 가져올 수 없는 경우 안내 메시지 반환
+    res.json({
+      success: false,
+      message: '베이스라인 엔진에서 실행 이력을 조회할 수 없습니다.',
+      details: '베이스라인 엔진의 실행 이력 API가 아직 구현되지 않았을 수 있습니다.',
+      suggestion: '각 프로파일의 베이스라인 상태는 프로파일 목록에서 확인하실 수 있습니다.',
+      history: [],
+      total: 0,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+
+  } catch (err) {
+    console.error('베이스라인 실행 이력 조회 오류:', err);
+    res.status(500).json({
+      error: '실행 이력 조회 중 오류가 발생했습니다.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/profiles/:id/baseline/status - 프로파일별 베이스라인 상태 조회
+ */
+router.get('/:id/baseline/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    console.log(`프로파일 ${id}의 베이스라인 상태 조회`);
+
+    // 베이스라인 엔진에서 프로파일 베이스라인 상태 조회 시도
+    try {
+      const result = await baselineClient.getProfileBaselineStatus(id);
+      console.log('베이스라인 엔진에서 프로파일 베이스라인 상태 조회 성공');
+      return res.json(result);
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 프로파일 베이스라인 상태 조회 실패:', baselineError.message);
+
+      // 베이스라인 엔진에서 상태를 조회할 수 없는 경우 기본 응답 반환
+      return res.json({
+        profile_id: id,
+        message: '베이스라인 엔진에서 프로파일 상태를 조회할 수 없습니다.',
+        details: '베이스라인 엔진의 프로파일 상태 조회 API가 아직 구현되지 않았을 수 있습니다.',
+        suggestion: '프로파일 목록에서 전체 프로파일 정보를 확인하세요.',
+        latest_baseline: null,
+        source: 'baseline_engine_unavailable'
+      });
+    }
+
+  } catch (err) {
+    console.error('프로파일 베이스라인 상태 조회 오류:', err);
+    res.status(500).json({
+      error: '프로파일 베이스라인 상태 조회 중 오류가 발생했습니다.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/profiles/:id/baseline/results - 프로파일별 베이스라인 분석 결과 조회
+ */
+router.get('/:id/baseline/results', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    console.log(`프로파일 ${id}의 베이스라인 분석 결과 조회`);
+
+    // 베이스라인 엔진에서 베이스라인 목록 조회
+    try {
+      const baselinesResult = await baselineClient.getBaselines(id);
+      console.log('베이스라인 목록 조회 성공:', baselinesResult);
+
+      // 베이스라인이 있는 경우 추가 정보 수집
+      if (baselinesResult && (Array.isArray(baselinesResult) ? baselinesResult.length > 0 : baselinesResult.baselines && baselinesResult.baselines.length > 0)) {
+        const baselines = Array.isArray(baselinesResult) ? baselinesResult : baselinesResult.baselines;
+
+        // 각 베이스라인의 상세 정보 조회 (최대 5개)
+        const detailPromises = baselines.slice(0, 5).map(baseline => {
+          const baselineId = baseline.id || baseline.baseline_id;
+          if (baselineId) {
+            return baselineClient.getBaselineDetail(id, baselineId).catch(error => {
+              console.warn(`베이스라인 상세 조회 실패 (${baselineId}):`, error.message);
+              return null;
+            });
+          }
+          return Promise.resolve(null);
+        });
+
+        const baselineDetails = await Promise.all(detailPromises);
+        const validDetails = baselineDetails.filter(detail => detail !== null);
+
+        // 이상치 조회
+        let anomalies = null;
+        try {
+          anomalies = await baselineClient.getAnomalies(id, null, 0.7, 20);
+          console.log('이상치 조회 성공');
+        } catch (anomalyError) {
+          console.warn('이상치 조회 실패:', anomalyError.message);
+        }
+
+        return res.json({
+          profile_id: id,
+          baselines: baselines,
+          baseline_details: validDetails,
+          anomalies: anomalies,
+          summary: {
+            total_baselines: baselines.length,
+            detailed_baselines: validDetails.length,
+            anomaly_count: anomalies ? (Array.isArray(anomalies) ? anomalies.length : anomalies.anomalies ? anomalies.anomalies.length : 0) : 0
+          },
+          source: 'baseline_engine'
+        });
+      } else {
+        // 베이스라인이 없는 경우
+        return res.json({
+          profile_id: id,
+          baselines: [],
+          baseline_details: [],
+          anomalies: null,
+          summary: {
+            total_baselines: 0,
+            detailed_baselines: 0,
+            anomaly_count: 0
+          },
+          message: '생성된 베이스라인이 없습니다. 베이스라인 생성을 먼저 실행해주세요.',
+          source: 'baseline_engine'
+        });
+      }
+
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 분석 결과 조회 실패:', baselineError.message);
+
+      return res.json({
+        profile_id: id,
+        baselines: [],
+        baseline_details: [],
+        anomalies: null,
+        summary: {
+          total_baselines: 0,
+          detailed_baselines: 0,
+          anomaly_count: 0
+        },
+        message: '베이스라인 엔진에서 분석 결과를 조회할 수 없습니다.',
+        error: baselineError.message,
+        source: 'baseline_engine_error'
+      });
+    }
+
+  } catch (err) {
+    console.error('프로파일 베이스라인 분석 결과 조회 오류:', err);
+    res.status(500).json({
+      error: '베이스라인 분석 결과 조회 중 오류가 발생했습니다.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * POST /api/profiles/:id/baseline/deviation - 프로파일별 편차 점수 계산
+ */
+router.post('/:id/baseline/deviation', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { target_entity, calculation_date, metric_names } = req.body;
+
+    console.log(`프로파일 ${id}의 편차 점수 계산:`, { target_entity, calculation_date, metric_names });
+
+    if (!target_entity) {
+      return res.status(400).json({
+        error: '대상 엔터티(target_entity)가 필요합니다.',
+        example: { target_entity: 'user001' }
+      });
+    }
+
+    // 베이스라인 엔진에서 편차 점수 계산
+    try {
+      const deviationResult = await baselineClient.calculateDeviationScores(
+        id,
+        target_entity,
+        calculation_date,
+        metric_names
+      );
+
+      console.log('편차 점수 계산 성공');
+      return res.json({
+        profile_id: id,
+        target_entity: target_entity,
+        calculation_date: calculation_date || new Date().toISOString().split('T')[0],
+        deviation_scores: deviationResult,
+        source: 'baseline_engine'
+      });
+
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 편차 점수 계산 실패:', baselineError.message);
+
+      return res.status(500).json({
+        error: '베이스라인 엔진에서 편차 점수를 계산할 수 없습니다.',
+        details: baselineError.message,
+        profile_id: id,
+        target_entity: target_entity
+      });
+    }
+
+  } catch (err) {
+    console.error('편차 점수 계산 오류:', err);
+    res.status(500).json({
+      error: '편차 점수 계산 중 오류가 발생했습니다.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/profiles/:id/timeline - 프로파일 활동 추이 시계열 데이터 조회
+ */
+router.get('/:id/timeline', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { period = 'daily', days = 30 } = req.query;
+
+    console.log(`프로파일 ${id}의 활동 추이 조회 (${period}, ${days}일)`);
+
+    // 베이스라인 엔진에서 활동 추이 데이터 조회
+    try {
+      const baselineEngineUrl = process.env.BASELINE_ENGINE_URL || 'http://localhost:8000';
+      const timelineResponse = await fetch(`${baselineEngineUrl}/api/v1/profiles/${id}/timeline?period=${period}&days=${days}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (timelineResponse.ok) {
+        const timelineData = await timelineResponse.json();
+        console.log('활동 추이 데이터 조회 성공');
+        return res.json(timelineData);
+      } else {
+        throw new Error(`HTTP ${timelineResponse.status}`);
+      }
+
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 활동 추이 조회 실패:', baselineError.message);
+
+      return res.status(500).json({
+        error: '활동 추이 데이터를 조회할 수 없습니다.',
+        details: baselineError.message,
+        profile_id: id,
+        requested_period: period,
+        requested_days: days
+      });
+    }
+
+  } catch (err) {
+    console.error('활동 추이 조회 오류:', err);
+    res.status(500).json({
+      error: '활동 추이 조회 중 오류가 발생했습니다.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/profiles/:id/hourly-patterns - 프로파일 시간대별 패턴 분석 조회
+ */
+router.get('/:id/hourly-patterns', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    console.log(`프로파일 ${id}의 시간대별 패턴 조회`);
+
+    // 베이스라인 엔진에서 시간대별 패턴 데이터 조회
+    try {
+      const baselineEngineUrl = process.env.BASELINE_ENGINE_URL || 'http://localhost:8000';
+      const patternsResponse = await fetch(`${baselineEngineUrl}/api/v1/profiles/${id}/hourly-patterns`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (patternsResponse.ok) {
+        const patternsData = await patternsResponse.json();
+        console.log('시간대별 패턴 데이터 조회 성공');
+        return res.json(patternsData);
+      } else {
+        throw new Error(`HTTP ${patternsResponse.status}`);
+      }
+
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 시간대별 패턴 조회 실패:', baselineError.message);
+
+      return res.status(500).json({
+        error: '시간대별 패턴 데이터를 조회할 수 없습니다.',
+        details: baselineError.message,
+        profile_id: id
+      });
+    }
+
+  } catch (err) {
+    console.error('시간대별 패턴 조회 오류:', err);
+    res.status(500).json({
+      error: '시간대별 패턴 조회 중 오류가 발생했습니다.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/profiles/:id/anomalies/timeline - 프로파일 이상치 시계열 분석 조회
+ */
+router.get('/:id/anomalies/timeline', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { days = 30 } = req.query;
+
+    console.log(`프로파일 ${id}의 이상치 시계열 조회 (${days}일)`);
+
+    // 베이스라인 엔진에서 이상치 시계열 데이터 조회
+    try {
+      const baselineEngineUrl = process.env.BASELINE_ENGINE_URL || 'http://localhost:8000';
+      const anomalyTimelineResponse = await fetch(`${baselineEngineUrl}/api/v1/profiles/${id}/anomalies/timeline?days=${days}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (anomalyTimelineResponse.ok) {
+        const anomalyTimelineData = await anomalyTimelineResponse.json();
+        console.log('이상치 시계열 데이터 조회 성공');
+        return res.json(anomalyTimelineData);
+      } else {
+        throw new Error(`HTTP ${anomalyTimelineResponse.status}`);
+      }
+
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 이상치 시계열 조회 실패:', baselineError.message);
+
+      return res.status(500).json({
+        error: '이상치 시계열 데이터를 조회할 수 없습니다.',
+        details: baselineError.message,
+        profile_id: id,
+        requested_days: days
+      });
+    }
+
+  } catch (err) {
+    console.error('이상치 시계열 조회 오류:', err);
+    res.status(500).json({
+      error: '이상치 시계열 조회 중 오류가 발생했습니다.',
+      details: err.message
+    });
+  }
+});
+
+/**
+ * GET /api/profiles/:id/quality-trends - 프로파일 품질 추이 분석 조회
+ */
+router.get('/:id/quality-trends', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    console.log(`프로파일 ${id}의 품질 추이 조회`);
+
+    // 베이스라인 엔진에서 품질 추이 데이터 조회
+    try {
+      const baselineEngineUrl = process.env.BASELINE_ENGINE_URL || 'http://localhost:8000';
+      const qualityTrendsResponse = await fetch(`${baselineEngineUrl}/api/v1/profiles/${id}/quality-trends`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (qualityTrendsResponse.ok) {
+        const qualityTrendsData = await qualityTrendsResponse.json();
+        console.log('품질 추이 데이터 조회 성공');
+        return res.json(qualityTrendsData);
+      } else {
+        throw new Error(`HTTP ${qualityTrendsResponse.status}`);
+      }
+
+    } catch (baselineError) {
+      console.warn('베이스라인 엔진 품질 추이 조회 실패:', baselineError.message);
+
+      return res.status(500).json({
+        error: '품질 추이 데이터를 조회할 수 없습니다.',
+        details: baselineError.message,
+        profile_id: id
+      });
+    }
+
+  } catch (err) {
+    console.error('품질 추이 조회 오류:', err);
+    res.status(500).json({
+      error: '품질 추이 조회 중 오류가 발생했습니다.',
+      details: err.message
+    });
   }
 });
 

@@ -324,6 +324,30 @@ router.post('/vpn-profile/config', (req, res) => {
 });
 
 /**
+ * GET /api/baseline-engine/baselines/:profileId/:baselineId - 베이스라인 상세 정보 조회
+ */
+router.get('/baselines/:profileId/:baselineId', async (req, res) => {
+    try {
+        const { profileId, baselineId } = req.params;
+        const baselineDetail = await baselineClient.getBaselineDetail(profileId, baselineId);
+
+        res.json({
+            status: 'success',
+            data: baselineDetail,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error(`베이스라인 상세 조회 실패 (${req.params.profileId}/${req.params.baselineId}):`, error);
+        res.status(500).json({
+            status: 'error',
+            error: '베이스라인 상세 조회 중 오류가 발생했습니다.',
+            message: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+/**
  * GET /api/baseline-engine/vpn-profile/metrics - VPN 관련 메트릭 목록 조회
  */
 router.get('/vpn-profile/metrics', (req, res) => {
