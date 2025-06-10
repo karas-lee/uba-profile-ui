@@ -495,7 +495,6 @@
                             <option value="department">부서별</option>
                             <option value="role">역할별</option>
                             <option value="global">전체 조직</option>
-                            <option value="custom">사용자 정의</option>
                         </select>
                     </div>
                 </div>
@@ -782,7 +781,6 @@
                             <option value="low">낮음 (보수적)</option>
                             <option value="medium" selected>보통 (권장)</option>
                             <option value="high">높음 (민감함)</option>
-                            <option value="custom">사용자 정의</option>
                         </select>
                     </div>
 
@@ -799,10 +797,10 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="riskScore">위험 점수 임계값 (0-100)</label>
-                    <input type="range" id="riskScore" min="0" max="100" value="70" style="width: 100%;">
+                    <label for="riskScore">위험 점수 임계값 (1-100)</label>
+                    <input type="range" id="riskScore" min="1" max="100" value="70" style="width: 100%;">
                     <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">
-                        <span>0 (낮음)</span>
+                        <span>1 (낮음)</span>
                         <span id="riskScoreValue">70</span>
                         <span>100 (높음)</span>
                     </div>
@@ -983,6 +981,61 @@
             const checkboxes = document.querySelectorAll(`#${cardId} input[type="checkbox"]:not(#selectAll${type.charAt(0).toUpperCase() + type.slice(1)}):not(:disabled):checked`);
             document.getElementById(counterId).textContent = `${checkboxes.length}개 선택됨`;
         }
+
+        // 경고 심각도와 위험 점수 임계값 매핑 정의
+        const severityRiskScoreMapping = {
+            // 심각도 → 위험 점수 범위 (중간값)
+            'info': 10,      // 정보: 0-20 (중간값 10)
+            'low': 25,       // 낮음: 21-40 (중간값 25)
+            'medium': 55,    // 보통: 41-70 (중간값 55)
+            'high': 80,      // 높음: 71-90 (중간값 80)
+            'critical': 95   // 매우 높음: 91-100 (중간값 95)
+        };
+
+        // 위험 점수 → 경고 심각도 매핑
+        function getRiskScoreToSeverity(riskScore) {
+            if (riskScore <= 20) return 'info';      // 정보
+            else if (riskScore <= 40) return 'low';       // 낮음
+            else if (riskScore <= 70) return 'medium';    // 보통
+            else if (riskScore <= 90) return 'high';      // 높음
+            else return 'critical';                       // 매우 높음
+        }
+
+        // 경고 심각도 변경 시 위험 점수 자동 조정 (연동 플래그로 무한루프 방지)
+        let isSeverityUpdating = false;
+        function onAlertSeverityChange() {
+            if (isSeverityUpdating) return;
+
+            const alertSeverity = document.getElementById('alertSeverity').value;
+            const targetRiskScore = severityRiskScoreMapping[alertSeverity];
+
+            if (targetRiskScore !== undefined) {
+                isSeverityUpdating = true;
+                document.getElementById('riskScore').value = targetRiskScore;
+                document.getElementById('riskScoreValue').textContent = targetRiskScore;
+                console.log(`경고 심각도 "${alertSeverity}" → 위험 점수 ${targetRiskScore}로 자동 조정`);
+                isSeverityUpdating = false;
+            }
+        }
+
+        // 위험 점수 변경 시 경고 심각도 자동 조정 (연동 플래그로 무한루프 방지)
+        let isRiskScoreUpdating = false;
+        function onRiskScoreChange() {
+            if (isRiskScoreUpdating) return;
+
+            const riskScore = parseInt(document.getElementById('riskScore').value);
+            const targetSeverity = getRiskScoreToSeverity(riskScore);
+
+            isRiskScoreUpdating = true;
+            document.getElementById('alertSeverity').value = targetSeverity;
+            document.getElementById('riskScoreValue').textContent = riskScore;
+            console.log(`위험 점수 ${riskScore} → 경고 심각도 "${targetSeverity}"로 자동 조정`);
+            isRiskScoreUpdating = false;
+        }
+
+        // 이벤트 리스너 등록
+        document.getElementById('alertSeverity').addEventListener('change', onAlertSeverityChange);
+        document.getElementById('riskScore').addEventListener('input', onRiskScoreChange);
 
         // 개별 체크박스 상태에 따라 전체 선택 체크박스 상태 업데이트
         function updateSelectAllCheckbox(categoryId, selectAllId) {
@@ -1507,26 +1560,154 @@
                     // 임계값 설정
                     anomalyThreshold: document.getElementById('anomalyThreshold').selectedOptions[0].textContent,
                     alertSeverity: document.getElementById('alertSeverity').value,
-                    riskScore: document.getElementById('riskScore').value,
+                    riskScore: Math.max(1, parseInt(document.getElementById('riskScore').value)), // 최소값 1 보장
 
                     // 알림 설정
                     alerts: Array.from(document.querySelectorAll('#content4 input[type="checkbox"]:checked'))
                         .map(cb => cb.nextElementSibling.textContent),
                 };
 
-                // API 호출을 위한 데이터 준비 (컬럼명 매핑)
+                // 한글 메트릭을 영어로 변환하는 함수
+                function translateMetricsToEnglish(koreanMetrics) {
+                    const metricMap = {
+                        // 시간 기반 메트릭 (8개)
+                        '로그인 시간 패턴': 'login_time_pattern',
+                        '세션 지속 시간': 'session_duration',
+                        '유휴 시간 패턴': 'idle_time_pattern',
+                        '비활성 시간 패턴': 'idle_time_pattern',
+                        '업무시간 외 활동': 'after_hours_activity',
+                        '주말/휴일 접근': 'weekend_holiday_access',
+                        '로그인 빈도 변화': 'login_frequency_change',
+                        '동시 세션 탐지': 'concurrent_session_detection',
+                        '시간대 이상 접근': 'timezone_anomaly_access',
+
+                        // 네트워크 기반 메트릭 (9개)
+                        'IP 주소 패턴': 'ip_address_pattern',
+                        '지리적 위치 분석': 'geo_location_analysis',
+                        '데이터 전송량': 'data_volume_transfer',
+                        '불가능한 이동 탐지': 'impossible_travel_detection',
+                        'VPN 사용 패턴': 'vpn_usage_pattern',
+                        '디바이스 변경 탐지': 'network_device_change',
+                        '대역폭 사용량 이상': 'bandwidth_usage_anomaly',
+                        '연결 패턴 분석': 'connection_pattern_analysis',
+                        '프록시 우회 시도': 'proxy_bypass_attempt',
+
+                        // 접근 기반 메트릭 (12개)
+                        '리소스 접근 패턴': 'resource_access_pattern',
+                        '인증 실패 횟수': 'authentication_failure_count',
+                        '권한 상승 시도': 'privilege_escalation_attempt',
+                        '민감한 데이터 접근': 'sensitive_data_access',
+                        '민감 데이터 접근': 'sensitive_data_access',
+                        '파일 다운로드 패턴': 'file_download_pattern',
+                        '관리자 권한 사용': 'admin_privilege_usage',
+                        '애플리케이션 사용 패턴': 'application_usage_pattern',
+                        '데이터베이스 쿼리 패턴': 'database_query_pattern',
+                        '이메일 행동 패턴': 'email_behavior_pattern',
+                        '시스템 명령어 실행': 'system_command_execution',
+                        '원격 접근 패턴': 'remote_access_pattern',
+                        '공유 폴더 접근': 'shared_folder_access'
+                    };
+
+                    console.log('=== 메트릭 번역 디버깅 ===');
+                    console.log('입력 메트릭 (한글):', koreanMetrics);
+
+                    const translatedMetrics = koreanMetrics.map(koreanMetric => {
+                        const englishMetric = metricMap[koreanMetric] || koreanMetric;
+                        console.log(`번역: "${koreanMetric}" → "${englishMetric}"`);
+                        return englishMetric;
+                    });
+
+                    console.log('번역된 메트릭 (영문):', translatedMetrics);
+                    console.log('=====================');
+
+                    return translatedMetrics;
+                }
+
+                // 분석 범위 매핑 함수 - 고정값
+                function mapAnalysisScope(scope) {
+                    const scopeMap = {
+                        'department': 'department',
+                        'role': 'user_activity',
+                        'global': 'organizational'
+                    };
+                    return scopeMap[scope] || 'department';
+                }
+
+                // anomalyThreshold 텍스트를 alert_threshold 숫자로 변환 (서버와 일관된 기준값)
+                function convertAnomalyThresholdToAlertThreshold(anomalyThreshold) {
+                    const thresholdMap = {
+                        '낮음 (관대함)': 0.9,     // 확실한 이상 징후만 알림
+                        '낮음 (보수적)': 0.9,     // 호환성 유지
+                        '보통 (권장)': 0.8,       // 균형 잡힌 탐지 (기본값)
+                        '높음 (민감함)': 0.6      // 작은 변화도 민감하게 탐지
+                    };
+                    return thresholdMap[anomalyThreshold] || 0.8;
+                }
+
+                // 알림 설정을 notification_settings 형태로 변환
+                function convertAlertsToNotificationSettings(alerts) {
+                    return {
+                        email_enabled: alerts.includes('이메일 알림'),
+                        slack_enabled: alerts.includes('Slack 알림'),
+                        sms_enabled: alerts.includes('SMS 알림'),
+                        dashboard_enabled: alerts.includes('대시보드 표시')
+                    };
+                }
+
+                // 베이스라인 엔진용 데이터 구조로 변환
+                const translatedMetrics = translateMetricsToEnglish(additionalData.selectedMetrics);
+                const mappedAnalysisScope = mapAnalysisScope(formData.analysisScope);
+                const alertThreshold = convertAnomalyThresholdToAlertThreshold(additionalData.anomalyThreshold);
+                const notificationSettings = convertAlertsToNotificationSettings(additionalData.alerts);
+
+                // 베이스라인 엔진용 완전한 프로파일 데이터 구조
                 const profileData = {
-                    id: currentEditProfile || generateUniqueId(),
+                    // 기본 정보
                     name: formData.name,
                     description: formData.description,
+                    profile_type: formData.profileType,
+                    analysis_scope: mappedAnalysisScope,
+                    log_source: formData.logSourceType,
+                    learning_period: parseInt(formData.learningPeriod),
+
+                    // 메트릭 설정
+                    selected_metrics: translatedMetrics,
+
+                    // 임계값 설정
+                    threshold_settings: {
+                        alert_threshold: alertThreshold,
+                        warning_threshold: alertThreshold - 0.2,
+                        minimum_deviation_score: 0.3,
+                        risk_score_threshold: Math.max(1, parseInt(additionalData.riskScore)) // 최소값 1 보장
+                    },
+
+                    // 알림 설정
+                    notification_settings: notificationSettings,
+
+                    // 로컬 DB용 추가 데이터 (호환성 유지)
+                    id: currentEditProfile || generateUniqueId(),
                     profileType: formData.profileType,
                     analysisScope: formData.analysisScope,
                     logSourceName: formData.logSourceName,
                     logSourceType: formData.logSourceType,
-                    ...additionalData // 나머지 데이터
+                    learningPeriod: formData.learningPeriod,
+                    ...additionalData
                 };
 
-                console.log('프로필 생성 요청 데이터:', profileData);
+                console.log('===== 완전한 프로파일 데이터 구조 =====');
+                console.log('베이스라인 엔진용 데이터:', {
+                    name: profileData.name,
+                    description: profileData.description,
+                    profile_type: profileData.profile_type,
+                    analysis_scope: profileData.analysis_scope,
+                    log_source: profileData.log_source,
+                    learning_period: profileData.learning_period,
+                    selected_metrics: profileData.selected_metrics,
+                    threshold_settings: profileData.threshold_settings,
+                    notification_settings: profileData.notification_settings
+                });
+                console.log('전체 프로파일 데이터:', profileData);
+                console.log('=======================================');
 
                 // 서버에 저장
                 const saveResult = await saveProfile(profileData);
@@ -1652,15 +1833,60 @@
             document.getElementById('profileName').value = profile.name;
             document.getElementById('profileDescription').value = profile.description || '';
 
-            // 셀렉트 박스 값 설정
-            // DB 컬럼명이 변경되었으므로 필드 이름도 변경
-            setSelectValue('profileType', profile.profile_type || profile.profileType);
-            setSelectValue('analysisScope', profile.analysis_scope || profile.analysisScope);
-            setSelectValue('learningPeriod', profile.learning_period || profile.learningPeriod);
+            // 베이스라인 엔진 응답을 프론트엔드 형식으로 역변환 - 고정값
+            function reverseMapAnalysisScope(engineScope) {
+                const reverseMap = {
+                    'department': 'department',         // 부서별 → 부서별
+                    'user_activity': 'role',           // 사용자 활동 분석 → 역할별
+                    'organizational': 'global',        // 조직 단위 분석 → 전체 조직
+                    'network_access': 'role',          // 네트워크 접근 → 역할별
+                    'comprehensive': 'global'          // 종합 분석 → 전체 조직
+                };
+                return reverseMap[engineScope] || 'department';
+            }
 
-            // 로그 소스 선택 (log_source_type 또는 logSourceType 사용)
-            const logSourceType = profile.log_source_type || profile.logSourceType;
+            function reverseMapProfileType(engineType) {
+                // 프로파일 유형은 베이스라인 엔진과 프론트엔드가 동일하지만,
+                // 베이스라인 엔진에서 user → user, entity → entity로 그대로 매핑
+                const reverseMap = {
+                    'user': 'user',
+                    'entity': 'entity',
+                    'hybrid': 'hybrid'
+                };
+                return reverseMap[engineType] || 'user';
+            }
+
+            // 셀렉트 박스 값 설정 (역변환 적용)
+            const frontendProfileType = reverseMapProfileType(profile.profile_type || profile.profileType);
+            const frontendAnalysisScope = reverseMapAnalysisScope(profile.analysis_scope || profile.analysisScope);
+
+            console.log('프로파일 유형/분석 범위 변환:', {
+                engine_profile_type: profile.profile_type,
+                frontend_profile_type: frontendProfileType,
+                engine_analysis_scope: profile.analysis_scope,
+                frontend_analysis_scope: frontendAnalysisScope
+            });
+
+            setSelectValue('profileType', frontendProfileType);
+            setSelectValue('analysisScope', frontendAnalysisScope);
+
+            // 학습 기간 설정 (베이스라인 엔진 데이터 우선 적용)
+            const learningPeriod = profile.learning_period || profile.learningPeriod;
+            console.log('학습 기간 설정:', {
+                learning_period: profile.learning_period,
+                learningPeriod: profile.learningPeriod,
+                final: learningPeriod
+            });
+            setSelectValue('learningPeriod', learningPeriod);
+
+            // 로그 소스 선택 (베이스라인 엔진의 log_source도 포함)
+            const logSourceType = profile.log_source_type || profile.logSourceType || profile.log_source;
             console.log('로그 소스 타입:', logSourceType);
+            console.log('프로파일 로그 관련 필드들:', {
+                log_source: profile.log_source,
+                log_source_type: profile.log_source_type,
+                logSourceType: profile.logSourceType
+            });
 
             if (logSourceType) {
                 const logSourceRadio = document.querySelector(`input[name="logSource"][value="${logSourceType}"]`);
@@ -1684,6 +1910,50 @@
             // 메트릭 체크박스를 설정하기 전에 충분한 지연 시간을 줌
             await new Promise(resolve => setTimeout(resolve, 800));
 
+            // 영어 메트릭을 한글로 변환하는 함수
+            function translateMetricsToKorean(englishMetrics) {
+                const metricMap = {
+                    // 시간 기반 메트릭
+                    'login_time_pattern': '로그인 시간 패턴',
+                    'session_duration': '세션 지속 시간',
+                    'after_hours_activity': '업무시간 외 활동',
+                    'weekend_holiday_access': '주말/휴일 접근',
+                    'login_frequency_change': '로그인 빈도 변화',
+                    'concurrent_session_detection': '동시 세션 탐지',
+                    'timezone_anomaly_access': '시간대 이상 접근',
+                    'idle_time_pattern': '유휴 시간 패턴',
+
+                    // 네트워크 기반 메트릭
+                    'ip_address_pattern': 'IP 주소 패턴',
+                    'geo_location_analysis': '지리적 위치 분석',
+                    'data_volume_transfer': '데이터 전송량',
+                    'impossible_travel_detection': '불가능한 이동 탐지',
+                    'vpn_usage_pattern': 'VPN 사용 패턴',
+                    'network_device_change': '디바이스 변경 탐지',
+                    'bandwidth_usage_anomaly': '대역폭 사용량 이상',
+                    'connection_pattern_analysis': '연결 패턴 분석',
+                    'proxy_bypass_attempt': '프록시 우회 시도',
+
+                    // 접근 기반 메트릭
+                    'authentication_failure_count': '인증 실패 횟수',
+                    'privilege_escalation_attempt': '권한 상승 시도',
+                    'remote_access_pattern': '원격 접근 패턴',
+                    'resource_access_pattern': '리소스 접근 패턴',
+                    'sensitive_data_access': '민감한 데이터 접근',
+                    'file_download_pattern': '파일 다운로드 패턴',
+                    'admin_privilege_usage': '관리자 권한 사용',
+                    'application_usage_pattern': '애플리케이션 사용 패턴',
+                    'system_command_execution': '시스템 명령어 실행',
+                    'database_query_pattern': '데이터베이스 쿼리 패턴',
+                    'email_behavior_pattern': '이메일 행동 패턴',
+                    'shared_folder_access': '공유 폴더 접근'
+                };
+
+                return englishMetrics.map(englishMetric =>
+                    metricMap[englishMetric] || englishMetric
+                );
+            }
+
             // 선택된 메트릭 정보를 여러 가능한 소스에서 찾음
             let selectedMetrics = [];
 
@@ -1692,6 +1962,13 @@
                 selectedMetrics = data.selectedMetrics;
             } else if (Array.isArray(profile.selectedMetrics)) {
                 selectedMetrics = profile.selectedMetrics;
+            } else if (Array.isArray(profile.selected_metrics)) {
+                // 베이스라인 엔진 응답 (영어 메트릭) - 한글로 변환
+                selectedMetrics = translateMetricsToKorean(profile.selected_metrics);
+                console.log('베이스라인 엔진 메트릭 변환:', {
+                    original: profile.selected_metrics,
+                    translated: selectedMetrics
+                });
             } else if (data.metrics && Array.isArray(data.metrics)) {
                 selectedMetrics = data.metrics;
             } else if (profile.metrics && Array.isArray(profile.metrics)) {
@@ -1730,52 +2007,178 @@
             }
 
             // 4단계: 임계값 설정
-            // anomalyThreshold 설정 - 텍스트 또는 값으로 설정
-            const anomalyThreshold = data.anomalyThreshold || profile.anomalyThreshold;
+            // 베이스라인 엔진의 threshold_settings를 프론트엔드 형식으로 변환
+            function convertThresholdSettingsToFrontend(thresholdSettings) {
+                if (!thresholdSettings) return {};
+
+                // alert_threshold 값을 anomalyThreshold 텍스트로 변환 - 서버와 일관된 기준값
+                let anomalyThreshold = 'medium';
+                if (thresholdSettings.alert_threshold >= 0.9) {
+                    anomalyThreshold = 'low';      // 낮음 (관대함) - alert_threshold 0.9
+                } else if (thresholdSettings.alert_threshold >= 0.8) {
+                    anomalyThreshold = 'medium';   // 보통 (권장) - alert_threshold 0.8
+                } else if (thresholdSettings.alert_threshold >= 0.6) {
+                    anomalyThreshold = 'high';     // 높음 (민감함) - alert_threshold 0.6
+                } else {
+                    anomalyThreshold = 'medium';   // 기본값
+                }
+
+                console.log('convertThresholdSettingsToFrontend - anomalyThreshold 변환 (고정값):', {
+                    alert_threshold: thresholdSettings.alert_threshold,
+                    converted_anomalyThreshold: anomalyThreshold
+                });
+
+                // risk_score_threshold를 alertSeverity로 변환 (getRiskScoreToSeverity와 일치)
+                let alertSeverity = 'medium';
+                const riskScore = thresholdSettings.risk_score_threshold || 1;
+                alertSeverity = getRiskScoreToSeverity(riskScore);
+
+                const result = {
+                    anomalyThreshold: anomalyThreshold,
+                    alertSeverity: alertSeverity,
+                    riskScore: thresholdSettings.risk_score_threshold || 70
+                };
+
+                console.log('convertThresholdSettingsToFrontend 최종 결과:', result);
+                return result;
+            }
+
+            // 베이스라인 엔진의 threshold_settings 처리
+            let frontendThresholdData = {};
+            if (profile.threshold_settings) {
+                frontendThresholdData = convertThresholdSettingsToFrontend(profile.threshold_settings);
+                console.log('베이스라인 엔진 threshold_settings 변환:', {
+                    original: profile.threshold_settings,
+                    converted: frontendThresholdData
+                });
+            }
+
+            // anomalyThreshold 설정 - 베이스라인 엔진 데이터 우선 적용
+            console.log('anomalyThreshold 설정 디버깅:', {
+                frontendThresholdData_anomalyThreshold: frontendThresholdData.anomalyThreshold,
+                data_anomalyThreshold: data.anomalyThreshold,
+                profile_anomalyThreshold: profile.anomalyThreshold
+            });
+
+            const anomalyThreshold = frontendThresholdData.anomalyThreshold || data.anomalyThreshold || profile.anomalyThreshold;
+            console.log('최종 anomalyThreshold 값:', anomalyThreshold);
+
             if (anomalyThreshold) {
-                if (['low', 'medium', 'high', 'custom'].includes(anomalyThreshold)) {
+                if (['low', 'medium', 'high'].includes(anomalyThreshold)) {
                     setSelectValue('anomalyThreshold', anomalyThreshold);
+                    console.log('anomalyThreshold 설정 완료:', anomalyThreshold);
                 } else {
                     // 텍스트 값으로 검색
                     const matchingOption = getKeyByText('anomalyThreshold', anomalyThreshold);
                     if (matchingOption) {
                         setSelectValue('anomalyThreshold', matchingOption);
+                        console.log('텍스트 매칭으로 anomalyThreshold 설정:', matchingOption);
                     } else {
                         console.warn('적절한 anomalyThreshold 값을 찾을 수 없습니다:', anomalyThreshold);
                     }
                 }
+            } else {
+                console.warn('anomalyThreshold 값이 없습니다');
             }
 
-            // alertSeverity 설정
-            const alertSeverity = data.alertSeverity || profile.alertSeverity || 'medium';
+            // alertSeverity 설정 - 베이스라인 엔진 데이터 우선 적용
+            const alertSeverity = frontendThresholdData.alertSeverity || data.alertSeverity || profile.alertSeverity || 'medium';
             setSelectValue('alertSeverity', alertSeverity);
 
-            // 위험 점수 설정
-            const riskScore = data.riskScore || profile.riskScore || profile.risk_score || 70;
-            document.getElementById('riskScore').value = riskScore;
-            document.getElementById('riskScoreValue').textContent = riskScore;
+            // 위험 점수 설정 - 베이스라인 엔진 데이터 우선 적용 (0일 때 1로 변환)
+            const hasRiskScore = frontendThresholdData.riskScore !== undefined && frontendThresholdData.riskScore !== null;
+
+            if (hasRiskScore) {
+                // 베이스라인 엔진에서 온 위험 점수 사용 (0이면 1로 변환)
+                let riskScore = frontendThresholdData.riskScore;
+                if (riskScore === 0) {
+                    riskScore = 1;
+                    console.log('위험 점수 0을 1로 변환');
+                }
+                document.getElementById('riskScore').value = riskScore;
+                document.getElementById('riskScoreValue').textContent = riskScore;
+
+                // 위험 점수에 맞는 심각도로 동기화
+                const syncedSeverity = getRiskScoreToSeverity(riskScore);
+                if (document.getElementById('alertSeverity').value !== syncedSeverity) {
+                    console.log('위험 점수 기준 심각도 동기화:', {
+                        riskScore: riskScore,
+                        syncedSeverity: syncedSeverity,
+                        currentSeverity: document.getElementById('alertSeverity').value
+                    });
+                    setSelectValue('alertSeverity', syncedSeverity);
+                }
+            } else {
+                // 베이스라인 엔진 데이터가 없으면 심각도에 맞는 위험 점수로 동기화
+                if (alertSeverity && severityRiskScoreMapping[alertSeverity]) {
+                    const syncedRiskScore = severityRiskScoreMapping[alertSeverity];
+                    document.getElementById('riskScore').value = syncedRiskScore;
+                    document.getElementById('riskScoreValue').textContent = syncedRiskScore;
+                    console.log('심각도 기준 위험 점수 동기화:', {
+                        alertSeverity: alertSeverity,
+                        syncedRiskScore: syncedRiskScore
+                    });
+                }
+            }
 
             // 알림 설정 체크박스 설정
-            const alerts = data.alerts || profile.alerts || [];
-            console.log('알림 설정:', alerts);
+            let alerts = data.alerts || profile.alerts || [];
 
+            // 베이스라인 엔진의 notification_settings 처리
+            if (alerts.length === 0 && profile.notification_settings) {
+                const notificationSettings = profile.notification_settings;
+                console.log('베이스라인 엔진 notification_settings:', notificationSettings);
+
+                alerts = [];
+                if (notificationSettings.email_enabled) alerts.push('이메일 알림');
+                if (notificationSettings.slack_enabled) alerts.push('Slack 알림');
+                if (notificationSettings.sms_enabled) alerts.push('SMS 알림');
+                if (notificationSettings.dashboard_enabled) alerts.push('대시보드 표시');
+
+                console.log('변환된 알림 설정:', alerts);
+            }
+
+            console.log('최종 알림 설정:', alerts);
+
+            // 알림 체크박스 설정 - 구체적인 ID로 설정
             if (alerts.length > 0) {
-                const alertCheckboxes = document.querySelectorAll('#content4 input[type="checkbox"]');
-                alertCheckboxes.forEach(checkbox => {
-                    const alertLabel = checkbox.nextElementSibling.textContent.trim();
-                    const isChecked = alerts.some(alert =>
-                        alert === alertLabel ||
-                        alert.includes(alertLabel) ||
-                        alertLabel.includes(alert)
-                    );
+                // 먼저 모든 체크박스를 초기화
+                document.getElementById('emailAlert').checked = false;
+                document.getElementById('slackAlert').checked = false;
+                document.getElementById('smsAlert').checked = false;
+                document.getElementById('dashboardAlert').checked = false;
 
-                    checkbox.checked = isChecked;
+                // 설정된 알림만 체크
+                alerts.forEach(alert => {
+                    console.log('알림 설정 처리 중:', alert);
+                    if (alert === '이메일 알림') {
+                        document.getElementById('emailAlert').checked = true;
+                        console.log('이메일 알림 체크됨');
+                    } else if (alert === 'Slack 알림') {
+                        document.getElementById('slackAlert').checked = true;
+                        console.log('Slack 알림 체크됨');
+                    } else if (alert === 'SMS 알림') {
+                        document.getElementById('smsAlert').checked = true;
+                        console.log('SMS 알림 체크됨');
+                    } else if (alert === '대시보드 표시') {
+                        document.getElementById('dashboardAlert').checked = true;
+                        console.log('대시보드 표시 체크됨');
+                    }
                 });
             } else {
                 // 기본값으로 이메일과 대시보드 알림 활성화
                 document.getElementById('emailAlert').checked = true;
                 document.getElementById('dashboardAlert').checked = true;
+                console.log('기본 알림 설정 적용됨');
             }
+
+            // 체크박스 상태 확인
+            console.log('알림 체크박스 최종 상태:', {
+                email: document.getElementById('emailAlert').checked,
+                slack: document.getElementById('slackAlert').checked,
+                sms: document.getElementById('smsAlert').checked,
+                dashboard: document.getElementById('dashboardAlert').checked
+            });
 
             // 5단계: 요약 정보 업데이트
             if (currentStep === totalSteps) {
@@ -1786,10 +2189,14 @@
         // 셀렉트 박스 값 설정 헬퍼 함수
         function setSelectValue(selectId, value) {
             const select = document.getElementById(selectId);
-            if (select && value) {
+            if (select && value !== null && value !== undefined) {
+                const stringValue = String(value); // 숫자든 문자열이든 문자열로 변환
+                console.log(`setSelectValue: ${selectId} = ${value} (${typeof value}) -> "${stringValue}"`);
+
                 for (let i = 0; i < select.options.length; i++) {
-                    if (select.options[i].value === value) {
+                    if (select.options[i].value === stringValue) {
                         select.selectedIndex = i;
+                        console.log(`${selectId} 값이 ${stringValue}로 설정됨`);
                         break;
                     }
                 }

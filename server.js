@@ -22,10 +22,12 @@ app.use(express.static('./'));
 // 라우터 가져오기
 const profilesRouter = require('./routes/profiles');
 const profileStatusRouter = require('./routes/profile-status');
+const baselineEngineRouter = require('./routes/baseline-engine');
 
 // API 라우트 설정
 app.use('/api/profiles', profilesRouter);
 app.use('/api/profile-status', profileStatusRouter);
+app.use('/api/baseline-engine', baselineEngineRouter);
 
 // 기본 라우트 - SPA 지원
 app.get('*', (req, res) => {

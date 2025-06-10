@@ -97,6 +97,11 @@ async function createProfile(profileData) {
 // 프로필 업데이트
 async function updateProfile(id, profileData) {
   try {
+    console.log('===== 프로파일 업데이트 요청 =====');
+    console.log('프로파일 ID:', id);
+    console.log('전송할 JSON BODY:', JSON.stringify(profileData, null, 2));
+    console.log('==============================');
+
     const response = await fetch(`/api/profiles/${id}`, {
       method: 'PUT',
       headers: {
@@ -140,7 +145,19 @@ async function deleteProfile(id) {
       throw new Error('프로필 삭제에 실패했습니다.');
     }
 
-    return await response.json();
+    // HTTP 204 No Content 또는 빈 응답 처리
+    const text = await response.text();
+    if (!text.trim()) {
+      console.log(`프로필 ${id} 삭제 성공 (빈 응답)`);
+      return true;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (jsonError) {
+      console.log(`프로필 ${id} 삭제 성공 (JSON 파싱 실패하지만 응답 성공)`);
+      return true;
+    }
   } catch (error) {
     console.error(`프로필 ${id} 삭제 오류:`, error);
     return false;
@@ -248,4 +265,199 @@ async function deleteProfileCompat(profileId) {
 // 고유 ID 생성 함수 유지
 function generateUniqueId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// 베이스라인 엔진 API 호출 함수들
+
+// 베이스라인 엔진 서버 상태 확인
+async function checkBaselineEngineHealth() {
+  try {
+    const response = await fetch('/api/baseline-engine/health');
+    if (!response.ok) {
+      throw new Error('베이스라인 엔진 서버 상태 확인 실패');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('베이스라인 엔진 헬스 체크 오류:', error);
+    return null;
+  }
+}
+
+// 지원하는 메트릭 목록 조회
+async function fetchSupportedMetrics() {
+  try {
+    const response = await fetch('/api/baseline-engine/metrics/supported');
+    if (!response.ok) {
+      throw new Error('지원 메트릭 조회 실패');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('지원 메트릭 조회 오류:', error);
+    return null;
+  }
+}
+
+// 베이스라인 엔진에서 프로파일 목록 조회
+async function fetchBaselineEngineProfiles(filters = {}) {
+  try {
+    const queryParams = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key]) {
+        queryParams.append(key, filters[key]);
+      }
+    });
+
+    const url = `/api/baseline-engine/profiles${queryParams.toString() ? '?' + queryParams.toString() : ''}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error('베이스라인 엔진 프로파일 목록 조회 실패');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('베이스라인 엔진 프로파일 목록 조회 오류:', error);
+    return null;
+  }
+}
+
+// 베이스라인 엔진에 프로파일 생성
+async function createBaselineEngineProfile(profileData) {
+  try {
+    const response = await fetch('/api/baseline-engine/profiles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || '베이스라인 엔진 프로파일 생성 실패');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('베이스라인 엔진 프로파일 생성 오류:', error);
+    return null;
+  }
+}
+
+// 베이스라인 엔진에서 프로파일 조회
+async function fetchBaselineEngineProfile(profileId) {
+  try {
+    const response = await fetch(`/api/baseline-engine/profiles/${profileId}`);
+
+    if (!response.ok) {
+      throw new Error('베이스라인 엔진 프로파일 조회 실패');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`베이스라인 엔진 프로파일 조회 오류 (${profileId}):`, error);
+    return null;
+  }
+}
+
+// 베이스라인 엔진에서 프로파일 상태 업데이트
+async function updateBaselineEngineProfileStatus(profileId, status, reason = null) {
+  try {
+    const statusData = { status };
+    if (reason) {
+      statusData.reason = reason;
+    }
+
+    const response = await fetch(`/api/baseline-engine/profiles/${profileId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(statusData),
+    });
+
+    if (!response.ok) {
+      throw new Error('베이스라인 엔진 프로파일 상태 업데이트 실패');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`베이스라인 엔진 프로파일 상태 업데이트 오류 (${profileId}):`, error);
+    return null;
+  }
+}
+
+// 베이스라인 엔진에서 프로파일 진단
+async function diagnoseBaselineEngineProfile(profileId) {
+  try {
+    const response = await fetch(`/api/baseline-engine/profiles/${profileId}/diagnose`, {
+      method: 'POST',
+    });
+
+    if (!response.ok) {
+      throw new Error('베이스라인 엔진 프로파일 진단 실패');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`베이스라인 엔진 프로파일 진단 오류 (${profileId}):`, error);
+    return null;
+  }
+}
+
+// VPN 프로파일 메트릭 검증
+async function validateVpnProfileMetrics(selectedMetrics) {
+  try {
+    const response = await fetch('/api/baseline-engine/vpn-profile/validate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ selected_metrics: selectedMetrics }),
+    });
+
+    if (!response.ok) {
+      throw new Error('VPN 프로파일 메트릭 검증 실패');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('VPN 프로파일 메트릭 검증 오류:', error);
+    return null;
+  }
+}
+
+// VPN 프로파일 설정 생성
+async function generateVpnProfileConfig(configData) {
+  try {
+    const response = await fetch('/api/baseline-engine/vpn-profile/config', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(configData),
+    });
+
+    if (!response.ok) {
+      throw new Error('VPN 프로파일 설정 생성 실패');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('VPN 프로파일 설정 생성 오류:', error);
+    return null;
+  }
+}
+
+// VPN 관련 메트릭 목록 조회
+async function fetchVpnProfileMetrics() {
+  try {
+    const response = await fetch('/api/baseline-engine/vpn-profile/metrics');
+
+    if (!response.ok) {
+      throw new Error('VPN 메트릭 목록 조회 실패');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('VPN 메트릭 목록 조회 오류:', error);
+    return null;
+  }
 }

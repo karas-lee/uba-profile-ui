@@ -10,6 +10,8 @@
 - 프로파일 목록 관리 (카드 뷰/리스트 뷰)
 - 프로파일 편집 및 삭제
 - 프로파일 상세 정보 보기
+- **🆕 베이스라인 엔진 API 통합**: 외부 베이스라인 엔진과의 완전한 통합
+- **🆕 VPN 프로파일 지원**: VPN 로그 분석에 최적화된 프로파일 생성 및 검증
 
 ### 통합 관리 기능
 - **통합 실행 관리**: 모든 프로파일의 실행 상태 확인 및 일괄 제어
@@ -69,6 +71,7 @@
 - **데이터베이스**: PostgreSQL (프로파일 및 상태 정보 저장)
 - **폴백 메커니즘**: 로컬 메모리 스토리지 (데이터베이스 연결 실패 시)
 - **실행 환경**: Node.js (v14 이상)
+- **🆕 외부 API 통합**: Axios 기반 베이스라인 엔진 API 클라이언트
 
 ## 시작하기
 
@@ -321,6 +324,143 @@ yarn dev
 2. 새로운 기능이나 수정을 위한 브랜치를 생성합니다.
 3. 변경사항을 커밋하고 Push합니다.
 4. Pull Request를 생성합니다.
+
+## 🆕 베이스라인 엔진 API 통합
+
+### 개요
+이 버전에서는 외부 베이스라인 엔진과의 완전한 API 통합이 추가되었습니다. 이를 통해 더 고급의 행동 분석 기능과 VPN 로그 분석에 특화된 기능을 제공합니다.
+
+### 새로운 기능들
+
+#### 1. 베이스라인 엔진 API 클라이언트
+- **위치**: `services/baseline-engine-client.js`
+- **기능**: Python api_client_example.py를 Node.js로 이식하여 완전한 API 통합 제공
+- **주요 클래스**:
+  - `BaselineEngineAPIClient`: 메인 API 클라이언트
+  - `VpnProfileHelper`: VPN 프로파일 생성 및 검증 도우미
+
+#### 2. 베이스라인 엔진 API 라우트
+- **위치**: `routes/baseline-engine.js`
+- **베이스 URL**: `/api/baseline-engine/*`
+- **사용 가능한 엔드포인트**:
+
+```
+GET  /api/baseline-engine/health                     # 베이스라인 엔진 서버 상태 확인
+GET  /api/baseline-engine/metrics/supported          # 지원하는 메트릭 목록 조회
+GET  /api/baseline-engine/profiles                   # 베이스라인 엔진에서 프로파일 목록 조회
+POST /api/baseline-engine/profiles                   # 베이스라인 엔진에 새 프로파일 생성
+GET  /api/baseline-engine/profiles/:id               # 특정 프로파일 조회
+PUT  /api/baseline-engine/profiles/:id               # 프로파일 업데이트
+PATCH /api/baseline-engine/profiles/:id/status       # 프로파일 상태 업데이트
+POST /api/baseline-engine/profiles/:id/diagnose      # 프로파일 진단
+DELETE /api/baseline-engine/profiles/:id             # 프로파일 삭제
+GET  /api/baseline-engine/vpn-profile/metrics        # VPN 관련 메트릭 목록 조회
+POST /api/baseline-engine/vpn-profile/validate       # VPN 프로파일 메트릭 검증
+POST /api/baseline-engine/vpn-profile/config         # VPN 프로파일 설정 생성
+```
+
+#### 3. VPN 프로파일 전용 기능
+- **VPN 최적화 메트릭**: 시간 기반 및 네트워크 기반 메트릭으로 분류
+- **자동 검증**: VPN 로그에 적합하지 않은 메트릭 필터링
+- **필수 메트릭 체크**: VPN 분석에 꼭 필요한 메트릭 확인
+
+#### 4. 프론트엔드 API 함수
+새로운 JavaScript API 함수들이 `js/api.js`에 추가되었습니다:
+
+```javascript
+// 베이스라인 엔진 서버 상태 확인
+checkBaselineEngineHealth()
+
+// 지원하는 메트릭 목록 조회
+fetchSupportedMetrics()
+
+// 베이스라인 엔진 프로파일 관리
+fetchBaselineEngineProfiles(filters)
+createBaselineEngineProfile(profileData)
+fetchBaselineEngineProfile(profileId)
+updateBaselineEngineProfileStatus(profileId, status, reason)
+diagnoseBaselineEngineProfile(profileId)
+
+// VPN 프로파일 전용 기능
+validateVpnProfileMetrics(selectedMetrics)
+generateVpnProfileConfig(configData)
+fetchVpnProfileMetrics()
+```
+
+### 환경 설정
+
+베이스라인 엔진 API 서버 URL을 설정하려면 `.env` 파일에 다음을 추가하세요:
+
+```bash
+# 베이스라인 엔진 설정
+BASELINE_ENGINE_URL=http://localhost:8000
+```
+
+설정하지 않으면 기본값 `http://localhost:8000`이 사용됩니다.
+
+### 베이스라인 엔진 서버 설정
+
+베이스라인 엔진 서버를 시작하려면:
+
+```bash
+# 베이스라인 엔진 프로젝트 디렉토리에서
+cd /path/to/baseline-engine
+python -m uvicorn main:app --reload --port 8000
+```
+
+### 통합 테스트
+
+베이스라인 엔진 API 통합이 올바르게 작동하는지 테스트하려면:
+
+```bash
+# 통합 테스트 실행
+node test-baseline-integration.js
+```
+
+이 테스트는 다음을 확인합니다:
+- 베이스라인 엔진 서버 연결 상태
+- API 엔드포인트 응답
+- VPN 프로파일 기능 작동
+- 메트릭 검증 기능
+
+### VPN 프로파일 생성 예시
+
+#### JavaScript에서 VPN 프로파일 생성:
+
+```javascript
+// VPN 프로파일 설정 생성
+const vpnConfig = await generateVpnProfileConfig({
+    name: 'VPN 사용자 베이스라인 프로파일',
+    description: 'VPN 접속 패턴 및 보안 행동 분석',
+    departments: ['IT', 'Finance', 'Engineering'],
+    selectedMetrics: [
+        'login_time_pattern',
+        'session_duration',
+        'vpn_usage_pattern',
+        'geo_location_analysis',
+        'impossible_travel_detection'
+    ]
+});
+
+// 메트릭 검증
+const validation = await validateVpnProfileMetrics(vpnConfig.data.selected_metrics);
+
+if (validation.data.is_valid) {
+    // 베이스라인 엔진에 프로파일 생성
+    const result = await createBaselineEngineProfile(vpnConfig.data);
+    console.log('프로파일 생성 완료:', result);
+} else {
+    console.log('메트릭 검증 실패:', validation.data.warnings);
+}
+```
+
+### 주의사항
+
+1. **베이스라인 엔진 서버**: 베이스라인 엔진 API 기능을 사용하려면 별도의 베이스라인 엔진 서버가 실행되고 있어야 합니다.
+
+2. **네트워크 연결**: 베이스라인 엔진 서버에 네트워크로 접근할 수 있어야 합니다.
+
+3. **호환성**: 현재 통합은 베이스라인 엔진 API v1과 호환됩니다.
 
 ## 라이선스
 

@@ -681,7 +681,7 @@
                     <option value="department">부서별</option>
                     <option value="role">역할별</option>
                     <option value="global">전체 조직</option>
-                    <option value="custom">사용자 정의</option>
+
                 </select>
             </div>
             <!-- 뷰 타입 토글 추가 -->
@@ -770,6 +770,61 @@
         // 뷰 타입 상태 관리 (기본값: card)
         let currentViewType = localStorage.getItem('ubaProfileViewType') || 'card';
 
+        // 영어 메트릭을 한글로 번역하는 전역 함수
+        function translateMetricsToKorean(englishMetrics) {
+            if (!Array.isArray(englishMetrics)) {
+                console.warn('translateMetricsToKorean: 입력이 배열이 아닙니다:', englishMetrics);
+                return [];
+            }
+
+            const metricMap = {
+                // 시간 기반 메트릭
+                'login_time_pattern': '로그인 시간 패턴',
+                'session_duration': '세션 지속 시간',
+                'after_hours_activity': '업무시간 외 활동',
+                'weekend_holiday_access': '주말/휴일 접근',
+                'login_frequency_change': '로그인 빈도 변화',
+                'concurrent_session_detection': '동시 세션 탐지',
+                'timezone_anomaly_access': '시간대 이상 접근',
+                'idle_time_pattern': '유휴 시간 패턴',
+
+                // 네트워크 기반 메트릭
+                'ip_address_pattern': 'IP 주소 패턴',
+                'geo_location_analysis': '지리적 위치 분석',
+                'data_volume_transfer': '데이터 전송량',
+                'impossible_travel_detection': '불가능한 이동 탐지',
+                'vpn_usage_pattern': 'VPN 사용 패턴',
+                'network_device_change': '디바이스 변경 탐지',
+                'bandwidth_usage_anomaly': '대역폭 사용량 이상',
+                'connection_pattern_analysis': '연결 패턴 분석',
+                'proxy_bypass_attempt': '프록시 우회 시도',
+
+                // 접근 기반 메트릭
+                'authentication_failure_count': '인증 실패 횟수',
+                'privilege_escalation_attempt': '권한 상승 시도',
+                'remote_access_pattern': '원격 접근 패턴',
+                'resource_access_pattern': '리소스 접근 패턴',
+                'sensitive_data_access': '민감한 데이터 접근',
+                'file_download_pattern': '파일 다운로드 패턴',
+                'admin_privilege_usage': '관리자 권한 사용',
+                'application_usage_pattern': '애플리케이션 사용 패턴',
+                'database_query_pattern': '데이터베이스 쿼리 패턴',
+                'email_behavior_pattern': '이메일 행동 패턴',
+                'system_command_execution': '시스템 명령어 실행',
+                'shared_folder_access': '공유 폴더 접근'
+            };
+
+            console.log('메트릭 번역 시도:', englishMetrics);
+            const translatedMetrics = englishMetrics.map(metric => {
+                const translated = metricMap[metric] || metric;
+                console.log(`메트릭 번역: "${metric}" → "${translated}"`);
+                return translated;
+            });
+            console.log('번역된 메트릭:', translatedMetrics);
+
+            return translatedMetrics;
+        }
+
         // 로컬 스토리지에서 프로파일 목록 가져오기 (API 호출로 변경)
         async function getProfiles() {
             try {
@@ -838,13 +893,43 @@
                 // DB에서 가져온 필드명과 이전 클라이언트 코드 필드명 둘 다 지원
                 const profileType = profile.profile_type || profile.profileType || 'user';
                 const analysisScope = profile.analysis_scope || profile.analysisScope || 'global';
-                const logSourceName = profile.log_source_name || profile.logSourceName || '-';
                 const learningPeriod = profile.learning_period || profile.learningPeriod || '-';
                 const createdAt = profile.created_at || profile.createdAt;
 
-                // data 필드에서 추가 정보 추출
+                // log_source 매핑 (베이스라인 엔진 응답 처리)
+                function mapLogSourceToKorean(logSource) {
+                    const logSourceMap = {
+                        'vpn': 'VPN 로그',
+                        'syslog': '시스템 로그',
+                        'dns': 'DNS 로그',
+                        'web': '웹 로그',
+                        'email': '이메일 로그',
+                        'database': '데이터베이스 로그',
+                        'file': '파일 접근 로그',
+                        'network': '네트워크 로그',
+                        'authentication': '인증 로그',
+                        'application': '애플리케이션 로그'
+                    };
+                    return logSourceMap[logSource] || logSource || '-';
+                }
+
+                const logSourceName = profile.log_source_name || profile.logSourceName ||
+                                     mapLogSourceToKorean(profile.log_source) || '-';
+
+                // 베이스라인 엔진과 로컬 DB 응답 둘 다 처리하여 메트릭 추출
                 const data = profile.data || {};
-                const selectedMetrics = data.selectedMetrics || profile.selectedMetrics || [];
+                let selectedMetrics;
+
+                // 베이스라인 엔진 응답인 경우 (영어 메트릭을 한글로 변환)
+                if (profile.selected_metrics && Array.isArray(profile.selected_metrics)) {
+                    console.log('카드 뷰 - 베이스라인 엔진 메트릭 변환:', profile.selected_metrics);
+                    selectedMetrics = translateMetricsToKorean(profile.selected_metrics);
+                    console.log('카드 뷰 - 변환된 메트릭:', selectedMetrics);
+                }
+                // 로컬 DB 응답인 경우
+                else {
+                    selectedMetrics = data.selectedMetrics || profile.selectedMetrics || [];
+                }
 
                 // 프로파일 유형 표시 텍스트 변환
                 let profileTypeText;
@@ -860,8 +945,11 @@
                 switch (analysisScope) {
                     case 'department': scopeText = '부서별'; break;
                     case 'role': scopeText = '역할별'; break;
+                    case 'user_activity': scopeText = '역할별'; break;  // 베이스라인 엔진 응답
                     case 'global': scopeText = '전체 조직'; break;
-                    case 'custom': scopeText = '사용자 정의'; break;
+                    case 'organizational': scopeText = '전체 조직'; break;  // 베이스라인 엔진 응답
+                    case 'comprehensive': scopeText = '전체 조직'; break;   // 베이스라인 엔진 응답
+                    case 'network_access': scopeText = '역할별'; break;    // 베이스라인 엔진 응답
                     default: scopeText = '-';
                 }
 
@@ -897,7 +985,7 @@
                                 <button class="action-btn edit" onclick="editProfile('${profile.id}')">
                                     ✏️
                                 </button>
-                                <button class="action-btn delete" onclick="showDeleteModal('${profile.id}', '${profile.name}')">
+                                <button class="action-btn delete" onclick="console.log('🖱️ 삭제 버튼 클릭됨:', '${profile.id}', '${profile.name}'); showDeleteModal('${profile.id}', '${profile.name}')">
                                     🗑️
                                 </button>
                                 <button class="action-btn results" onclick="viewProfileResults('${profile.id}')" title="분석 결과 보기">
@@ -944,12 +1032,42 @@
                 // DB에서 가져온 필드명과 이전 클라이언트 코드 필드명 둘 다 지원
                 const profileType = profile.profile_type || profile.profileType || 'user';
                 const analysisScope = profile.analysis_scope || profile.analysisScope || 'global';
-                const logSourceName = profile.log_source_name || profile.logSourceName || '-';
                 const createdAt = profile.created_at || profile.createdAt;
 
-                // data 필드에서 추가 정보 추출
+                // log_source 매핑 (베이스라인 엔진 응답 처리)
+                function mapLogSourceToKorean(logSource) {
+                    const logSourceMap = {
+                        'vpn': 'VPN 로그',
+                        'syslog': '시스템 로그',
+                        'dns': 'DNS 로그',
+                        'web': '웹 로그',
+                        'email': '이메일 로그',
+                        'database': '데이터베이스 로그',
+                        'file': '파일 접근 로그',
+                        'network': '네트워크 로그',
+                        'authentication': '인증 로그',
+                        'application': '애플리케이션 로그'
+                    };
+                    return logSourceMap[logSource] || logSource || '-';
+                }
+
+                const logSourceName = profile.log_source_name || profile.logSourceName ||
+                                     mapLogSourceToKorean(profile.log_source) || '-';
+
+                // 베이스라인 엔진과 로컬 DB 응답 둘 다 처리하여 메트릭 추출
                 const data = profile.data || {};
-                const selectedMetrics = data.selectedMetrics || profile.selectedMetrics || [];
+                let selectedMetrics;
+
+                // 베이스라인 엔진 응답인 경우 (영어 메트릭을 한글로 변환)
+                if (profile.selected_metrics && Array.isArray(profile.selected_metrics)) {
+                    console.log('리스트 뷰 - 베이스라인 엔진 메트릭 변환:', profile.selected_metrics);
+                    selectedMetrics = translateMetricsToKorean(profile.selected_metrics);
+                    console.log('리스트 뷰 - 변환된 메트릭:', selectedMetrics);
+                }
+                // 로컬 DB 응답인 경우
+                else {
+                    selectedMetrics = data.selectedMetrics || profile.selectedMetrics || [];
+                }
 
                 // 프로파일 유형 표시 텍스트 변환
                 let profileTypeText;
@@ -995,7 +1113,7 @@
                             <button class="action-btn edit" onclick="editProfile('${profile.id}')">
                                 ✏️
                             </button>
-                            <button class="action-btn delete" onclick="showDeleteModal('${profile.id}', '${profile.name}')">
+                            <button class="action-btn delete" onclick="console.log('🖱️ 삭제 버튼 클릭됨 (리스트뷰):', '${profile.id}', '${profile.name}'); showDeleteModal('${profile.id}', '${profile.name}')">
                                 🗑️
                             </button>
                             <button class="action-btn results" onclick="viewProfileResults('${profile.id}')" title="분석 결과 보기">
@@ -1047,16 +1165,98 @@
                 // DB에서 가져온 필드명과 이전 클라이언트 코드 필드명 둘 다 지원
                 const profileType = profile.profile_type || profile.profileType || 'user';
                 const analysisScope = profile.analysis_scope || profile.analysisScope || 'global';
-                const logSourceName = profile.log_source_name || profile.logSourceName || '-';
                 const learningPeriod = profile.learning_period || profile.learningPeriod || '-';
                 const createdAt = profile.created_at || profile.createdAt;
 
-                // data 필드에서 추가 정보 추출
-                const data = profile.data || {};
-                const selectedMetrics = data.selectedMetrics || profile.selectedMetrics || [];
-                const anomalyThreshold = data.anomalyThreshold || profile.anomalyThreshold || '-';
-                const riskScore = data.riskScore || profile.riskScore || '-';
-                const alerts = data.alerts || profile.alerts || [];
+                // log_source 매핑 (베이스라인 엔진 응답 처리)
+                function mapLogSourceToKorean(logSource) {
+                    const logSourceMap = {
+                        'vpn': 'VPN 로그',
+                        'syslog': '시스템 로그',
+                        'dns': 'DNS 로그',
+                        'web': '웹 로그',
+                        'email': '이메일 로그',
+                        'database': '데이터베이스 로그',
+                        'file': '파일 접근 로그',
+                        'network': '네트워크 로그',
+                        'authentication': '인증 로그',
+                        'application': '애플리케이션 로그'
+                    };
+                    return logSourceMap[logSource] || logSource || '-';
+                }
+
+                const logSourceName = profile.log_source_name || profile.logSourceName ||
+                                     mapLogSourceToKorean(profile.log_source) || '-';
+
+                // 베이스라인 엔진과 로컬 DB 응답 둘 다 처리
+                function extractProfileData(profile) {
+                    console.log('=== 프로파일 데이터 추출 ===');
+                    console.log('전체 프로파일:', profile);
+                    console.log('selected_metrics 존재:', !!profile.selected_metrics);
+                    console.log('threshold_settings 존재:', !!profile.threshold_settings);
+
+                    const data = profile.data || {};
+
+                    // 베이스라인 엔진 응답인 경우
+                    if (profile.selected_metrics && profile.threshold_settings) {
+                        console.log('베이스라인 엔진 응답으로 처리');
+                        console.log('원본 메트릭:', profile.selected_metrics);
+                        const translatedMetrics = translateMetricsToKorean(profile.selected_metrics);
+                        console.log('번역된 메트릭:', translatedMetrics);
+
+                        return {
+                            selectedMetrics: translatedMetrics,
+                            anomalyThreshold: mapThresholdToSensitivity(profile.threshold_settings),
+                            riskScore: profile.threshold_settings.risk_score_threshold || '-',
+                            alerts: extractNotificationSettings(profile.notification_settings)
+                        };
+                    }
+                    // 로컬 DB 응답인 경우 (기존 방식)
+                    else {
+                        console.log('로컬 DB 응답으로 처리');
+                        console.log('data:', data);
+                        return {
+                            selectedMetrics: data.selectedMetrics || profile.selectedMetrics || [],
+                            anomalyThreshold: data.anomalyThreshold || profile.anomalyThreshold || '-',
+                            riskScore: data.riskScore || profile.riskScore || '-',
+                            alerts: data.alerts || profile.alerts || []
+                        };
+                    }
+                }
+
+                // 영어 메트릭을 한글로 번역 (전역 함수 사용)
+
+                // 임계값을 민감도 텍스트로 변환 (서버와 일치하는 기준값)
+                function mapThresholdToSensitivity(thresholdSettings) {
+                    if (!thresholdSettings || thresholdSettings.alert_threshold === undefined) return '-';
+
+                    const alertThreshold = thresholdSettings.alert_threshold;
+                    console.log('임계값 매핑:', alertThreshold);
+
+                    if (alertThreshold >= 0.9) return '낮음 (관대함)';
+                    if (alertThreshold >= 0.8) return '보통 (권장)';
+                    if (alertThreshold >= 0.6) return '높음 (민감함)';
+                    return '사용자 정의';
+                }
+
+                // 알림 설정 추출
+                function extractNotificationSettings(notificationSettings) {
+                    if (!notificationSettings) return [];
+
+                    const alerts = [];
+                    if (notificationSettings.email_enabled) alerts.push('이메일 알림');
+                    if (notificationSettings.slack_enabled) alerts.push('Slack 알림');
+                    if (notificationSettings.sms_enabled) alerts.push('SMS 알림');
+                    if (notificationSettings.dashboard_enabled) alerts.push('대시보드 표시');
+
+                    return alerts;
+                }
+
+                const extractedData = extractProfileData(profile);
+                const selectedMetrics = extractedData.selectedMetrics;
+                const anomalyThreshold = extractedData.anomalyThreshold;
+                const riskScore = extractedData.riskScore;
+                const alerts = extractedData.alerts;
 
                 // 프로파일 유형 표시 텍스트 변환
                 let profileTypeText;
@@ -1072,8 +1272,11 @@
                 switch (analysisScope) {
                     case 'department': scopeText = '부서별'; break;
                     case 'role': scopeText = '역할별'; break;
+                    case 'user_activity': scopeText = '역할별'; break;  // 베이스라인 엔진 응답
                     case 'global': scopeText = '전체 조직'; break;
-                    case 'custom': scopeText = '사용자 정의'; break;
+                    case 'organizational': scopeText = '전체 조직'; break;  // 베이스라인 엔진 응답
+                    case 'comprehensive': scopeText = '전체 조직'; break;   // 베이스라인 엔진 응답
+                    case 'network_access': scopeText = '역할별'; break;    // 베이스라인 엔진 응답
                     default: scopeText = '-';
                 }
 
@@ -1172,19 +1375,38 @@
 
         // 삭제 모달 표시
         function showDeleteModal(profileId, profileName) {
+            console.log('🗑️ 삭제 모달 표시:', { profileId, profileName });
+
             const modal = document.getElementById('deleteModal');
             const confirmBtn = document.getElementById('confirmDeleteBtn');
             const profileNameEl = document.getElementById('deleteProfileName');
+
+            if (!modal) {
+                console.error('❌ 삭제 모달 요소를 찾을 수 없습니다');
+                return;
+            }
+
+            if (!confirmBtn) {
+                console.error('❌ 삭제 확인 버튼을 찾을 수 없습니다');
+                return;
+            }
+
+            if (!profileNameEl) {
+                console.error('❌ 프로파일 이름 요소를 찾을 수 없습니다');
+                return;
+            }
 
             profileNameEl.textContent = profileName;
 
             // 확인 버튼 클릭 이벤트 리스너 설정
             confirmBtn.onclick = () => {
+                console.log('✅ 삭제 확인 버튼 클릭됨:', profileId);
                 deleteProfile(profileId);
                 closeDeleteModal();
             };
 
             modal.classList.add('active');
+            console.log('✅ 삭제 모달 활성화 완료');
         }
 
         // 삭제 모달 닫기
@@ -1201,9 +1423,46 @@
 
         // 프로파일 삭제
         async function deleteProfile(profileId) {
-            const result = await deleteProfileCompat(profileId);
-            if (result) {
-                await renderProfiles();
+            console.log('🗑️ 프로파일 삭제 시작:', profileId);
+
+            try {
+                // 직접 API 호출하여 무한 재귀 방지
+                const response = await fetch(`/api/profiles/${profileId}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    throw new Error('프로필 삭제에 실패했습니다.');
+                }
+
+                // HTTP 204 No Content 또는 빈 응답 처리
+                const text = await response.text();
+                let result = true;
+
+                if (text.trim()) {
+                    try {
+                        result = JSON.parse(text);
+                    } catch (jsonError) {
+                        console.log(`프로필 ${profileId} 삭제 성공 (JSON 파싱 실패하지만 응답 성공)`);
+                        result = true;
+                    }
+                } else {
+                    console.log(`프로필 ${profileId} 삭제 성공 (빈 응답)`);
+                }
+
+                console.log('🗑️ 삭제 API 결과:', result);
+
+                if (result) {
+                    console.log('✅ 프로파일 삭제 성공, 목록 새로고침');
+                    await renderProfiles();
+                    console.log('✅ 프로파일 목록 새로고침 완료');
+                } else {
+                    console.error('❌ 프로파일 삭제 실패');
+                    alert('프로파일 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('❌ 프로파일 삭제 중 오류:', error);
+                alert('프로파일 삭제 중 오류가 발생했습니다: ' + error.message);
             }
         }
 
