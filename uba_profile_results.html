@@ -13,28 +13,34 @@
 
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
             color: #e2e8f0;
             min-height: 100vh;
             font-size: 0.9rem;
+            padding: 20px;
         }
 
         .dashboard-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 1rem;
-            min-height: 100vh;
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+            min-height: calc(100vh - 40px);
             display: flex;
             flex-direction: column;
         }
 
         .header {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            padding: 30px;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
         }
 
         .header-title h1 {
@@ -51,13 +57,19 @@
             font-size: 0.95rem;
         }
 
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
         .profile-header {
             background: rgba(30, 41, 59, 0.7);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(51, 65, 85, 0.3);
             border-radius: 0.6rem;
             padding: 1.25rem;
-            margin-bottom: 1.5rem;
+            margin: 0 30px 1.5rem 30px;
             display: flex;
             justify-content: space-between;
         }
@@ -106,7 +118,8 @@
         .profile-nav {
             display: flex;
             gap: 0.75rem;
-            margin-bottom: 1.5rem;
+            margin: 0 30px 1.5rem 30px;
+            padding-bottom: 1rem;
             border-bottom: 1px solid rgba(51, 65, 85, 0.3);
         }
 
@@ -211,7 +224,7 @@
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 1.5rem;
-            margin-bottom: 2rem;
+            margin: 0 30px 2rem 30px;
         }
 
         .full-width {
@@ -683,9 +696,12 @@
                 <h1>UBA 프로파일 분석 결과</h1>
                 <p>사용자 행동 분석 결과 및 이상 징후를 확인하세요</p>
             </div>
-            <button class="btn btn-secondary" onclick="goBackToList()">
-                ← 목록으로 돌아가기
-            </button>
+            <div class="header-actions">
+                <a href="uba_individual_users.html" class="btn btn-secondary" style="text-decoration: none;">👥 개별 사용자 분석</a>
+                <button class="btn btn-secondary" onclick="goBackToList()">
+                    ← 목록으로 돌아가기
+                </button>
+            </div>
         </div>
 
         <div class="profile-header">
@@ -719,203 +735,90 @@
             </div>
         </div>
 
-        <div class="profile-nav">
-            <a href="uba_profile_results.html" class="nav-item active">분석 결과</a>
-            <a href="#" class="nav-item" onclick="goToBaselineManagement()">베이스라인 관리</a>
-        </div>
+                  <div class="profile-nav">
+              <a href="uba_profile_results.html" class="nav-item active">프로파일 분석</a>
+              <a href="uba_individual_users.html" class="nav-item">개별 사용자 분석</a>
+              <a href="#" class="nav-item" onclick="goToBaselineManagement()">베이스라인 관리</a>
+          </div>
 
         <div class="dashboard-grid">
 
 
-            <!-- 핵심 지표 -->
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3 class="card-title">핵심 행동 지표</h3>
-                </div>
-                <div class="metrics-grid">
-                    <div class="metric-item">
-                        <div class="metric-info">
-                            <div class="metric-name">로그인 시도</div>
-                            <div class="metric-value">47회</div>
-                        </div>
-                        <div class="metric-indicator indicator-normal">✓</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-info">
-                            <div class="metric-name">업무시간 외 활동</div>
-                            <div class="metric-value">12%</div>
-                        </div>
-                        <div class="metric-indicator indicator-normal">✓</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-info">
-                            <div class="metric-name">파일 다운로드</div>
-                            <div class="metric-value">367MB</div>
-                        </div>
-                        <div class="metric-indicator indicator-warning">!</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-info">
-                            <div class="metric-name">IP 주소 변경</div>
-                            <div class="metric-value">3회</div>
-                        </div>
-                        <div class="metric-indicator indicator-warning">!</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-info">
-                            <div class="metric-name">인증 실패</div>
-                            <div class="metric-value">2회</div>
-                        </div>
-                        <div class="metric-indicator indicator-normal">✓</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-info">
-                            <div class="metric-name">권한 상승 시도</div>
-                            <div class="metric-value">1회</div>
-                        </div>
-                        <div class="metric-indicator indicator-critical">!</div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- 최근 활동 타임라인 -->
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3 class="card-title">최근 활동 및 이상 징후</h3>
-                </div>
-                <div class="activity-timeline">
-                    <div class="timeline-item">
-                        <div class="timeline-time">2025-06-01 09:32</div>
-                        <div class="timeline-content">로그인 성공 (192.168.1.45)</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-time">2025-06-01 10:15</div>
-                        <div class="timeline-content">기밀 문서 액세스 (HR/salary_2025.xlsx)</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-time">2025-06-01 11:42</div>
-                        <div class="timeline-content">대용량 파일 다운로드 (237MB)</div>
-                        <div class="timeline-anomaly">이상 징후: 일반적인 다운로드 패턴보다 5배 큰 용량</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-time">2025-06-01 14:26</div>
-                        <div class="timeline-content">권한 상승 명령 실행 (sudo)</div>
-                        <div class="timeline-anomaly">이상 징후: 사용자가 이전에 권한 상승을 시도한 적이 없음</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-time">2025-06-01 16:58</div>
-                        <div class="timeline-content">로그아웃</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-time">2025-06-01 23:15</div>
-                        <div class="timeline-content">로그인 시도 (원격 IP: 203.45.67.89)</div>
-                        <div class="timeline-anomaly">이상 징후: 업무 시간 외 접속 + 비정상적인 위치 (중국)</div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- 탐지된 이상 징후 목록 -->
+
+
+
+
+            <!-- 메트릭 분석 결과 -->
             <div class="dashboard-card full-width">
                 <div class="card-header">
-                    <h3 class="card-title">탐지된 이상 징후</h3>
-                </div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>탐지 일시</th>
-                                <th>이상 징후 유형</th>
-                                <th>심각도</th>
-                                <th>세부 정보</th>
-                                <th>조치 상태</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>2025-06-01 23:15</td>
-                                <td>업무시간 외 접속</td>
-                                <td>
-                                    <div class="severity-high">
-                                        <div class="severity-indicator"></div>
-                                        높음
-                                    </div>
-                                </td>
-                                <td>중국 베이징 (203.45.67.89)에서 23:15에 접속 시도</td>
-                                <td>조사 중</td>
-                            </tr>
-                            <tr>
-                                <td>2025-06-01 14:26</td>
-                                <td>권한 상승 시도</td>
-                                <td>
-                                    <div class="severity-high">
-                                        <div class="severity-indicator"></div>
-                                        높음
-                                    </div>
-                                </td>
-                                <td>관리자 권한 획득 시도 (sudo 명령어 사용)</td>
-                                <td>조사 중</td>
-                            </tr>
-                            <tr>
-                                <td>2025-06-01 11:42</td>
-                                <td>비정상 다운로드</td>
-                                <td>
-                                    <div class="severity-medium">
-                                        <div class="severity-indicator"></div>
-                                        중간
-                                    </div>
-                                </td>
-                                <td>237MB 크기의 파일 다운로드 (일반 패턴의 5배)</td>
-                                <td>확인 완료</td>
-                            </tr>
-                            <tr>
-                                <td>2025-05-28 16:35</td>
-                                <td>계정 공유 의심</td>
-                                <td>
-                                    <div class="severity-medium">
-                                        <div class="severity-indicator"></div>
-                                        중간
-                                    </div>
-                                </td>
-                                <td>30분 간격으로 서울과 부산에서 동시 접속</td>
-                                <td>확인 완료</td>
-                            </tr>
-                            <tr>
-                                <td>2025-05-25 10:12</td>
-                                <td>민감 정보 접근</td>
-                                <td>
-                                    <div class="severity-low">
-                                        <div class="severity-indicator"></div>
-                                        낮음
-                                    </div>
-                                </td>
-                                <td>HR 디렉토리 내 급여 정보 파일 접근</td>
-                                <td>확인 완료</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- 행동 패턴 분석 결과 -->
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h3 class="card-title">행동 패턴 분석</h3>
+                    <h3 class="card-title">메트릭 분석</h3>
                     <div class="card-actions">
                         <button class="card-action" title="베이스라인 비교 표시" onclick="toggleBaselineComparison(true)">B</button>
                         <button class="card-action" title="현재 행동만 표시" onclick="toggleBaselineComparison(false)">C</button>
                     </div>
                 </div>
-                <div class="chart-container" id="behaviorPatternChart">
-                    <div class="chart-placeholder">레이더 차트를 로드하는 중...</div>
+
+                <!-- 3가지 분석 차트 영역 -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+
+                    <!-- 시간 기반 분석 -->
+                    <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%); border-radius: 1rem; padding: 1.5rem; border: 1px solid rgba(148, 163, 184, 0.2);">
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="font-size: 1.5rem; margin-right: 0.5rem;">⏰</span>
+                            <h4 style="color: #f1f5f9; font-size: 1.1rem; margin: 0;">시간 기반 분석</h4>
+                        </div>
+                        <div class="chart-container" id="timeBasedChart" style="height: 250px;">
+                            <div class="chart-placeholder">시간 패턴 차트를 로드하는 중...</div>
+                        </div>
+                        <div id="timeBasedMetricsList" style="margin-top: 0.5rem; font-size: 0.85rem; color: #94a3b8;">
+                            로그인 시간, 세션 지속시간, 업무시간 외 활동 등
+                        </div>
+                    </div>
+
+                    <!-- 네트워크 기반 분석 -->
+                    <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%); border-radius: 1rem; padding: 1.5rem; border: 1px solid rgba(148, 163, 184, 0.2);">
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="font-size: 1.5rem; margin-right: 0.5rem;">🌐</span>
+                            <h4 style="color: #f1f5f9; font-size: 1.1rem; margin: 0;">네트워크 기반 분석</h4>
+                        </div>
+                        <div class="chart-container" id="networkBasedChart" style="height: 250px;">
+                            <div class="chart-placeholder">네트워크 패턴 차트를 로드하는 중...</div>
+                        </div>
+                        <div id="networkBasedMetricsList" style="margin-top: 0.5rem; font-size: 0.85rem; color: #94a3b8;">
+                            IP 주소, 지리적 위치, 데이터 전송량, VPN 사용 등
+                        </div>
+                    </div>
+
+                    <!-- 접근 기반 분석 -->
+                    <div style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.6) 0%, rgba(30, 41, 59, 0.4) 100%); border-radius: 1rem; padding: 1.5rem; border: 1px solid rgba(148, 163, 184, 0.2);">
+                        <div style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="font-size: 1.5rem; margin-right: 0.5rem;">🔐</span>
+                            <h4 style="color: #f1f5f9; font-size: 1.1rem; margin: 0;">접근 기반 분석</h4>
+                        </div>
+                        <div class="chart-container" id="accessBasedChart" style="height: 250px;">
+                            <div class="chart-placeholder">접근 패턴 차트를 로드하는 중...</div>
+                        </div>
+                        <div id="accessBasedMetricsList" style="margin-top: 0.5rem; font-size: 0.85rem; color: #94a3b8;">
+                            로그인 빈도, 동시 세션, 디바이스 변경, 대역폭 사용 등
+                        </div>
+                    </div>
                 </div>
-                <div class="baseline-legend" style="display: flex; justify-content: center; margin-top: 10px; gap: 20px; font-size: 0.9rem;">
+
+                <!-- 범례 -->
+                <div class="baseline-legend" style="display: flex; justify-content: center; margin-top: 1.5rem; gap: 20px; font-size: 0.9rem;">
                     <div style="display: flex; align-items: center; gap: 5px;">
-                        <div style="width: 12px; height: 12px; background: rgba(99, 102, 241, 0.6); border-radius: 50%;"></div>
-                        <span>현재 행동</span>
+                        <div style="width: 12px; height: 12px; background: #22c55e; border-radius: 50%;"></div>
+                        <span>품질 점수 80% 이상</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 5px;">
-                        <div style="width: 12px; height: 12px; background: rgba(74, 222, 128, 0.3); border-radius: 50%;"></div>
-                        <span>정상 베이스라인</span>
+                        <div style="width: 12px; height: 12px; background: #eab308; border-radius: 50%;"></div>
+                        <span>품질 점수 60-80%</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 5px;">
+                        <div style="width: 12px; height: 12px; background: #ef4444; border-radius: 50%;"></div>
+                        <span>품질 점수 60% 미만</span>
                     </div>
                 </div>
             </div>
@@ -979,11 +882,7 @@
                         </div>
                     </div>
 
-                    <h4 style="margin: 1.5rem 0 1rem 0; font-size: 1.1rem; color: #f1f5f9;">주요 메트릭 베이스라인 비교</h4>
 
-                    <div class="baseline-metrics" id="baselineMetricsContainer">
-                        <!-- 여기에 동적으로 메트릭이 추가됩니다 -->
-                    </div>
 
                     <h4 style="margin: 1.5rem 0 1rem 0; font-size: 1.1rem; color: #f1f5f9;">시간대별 활동 패턴</h4>
                     <div class="heatmap-container">
@@ -1693,472 +1592,11 @@
 
                 document.getElementById('lastUpdated').textContent = lastUpdatedText;
 
-                // 선택한 메트릭에 대한 베이스라인 정보 생성 (전역 변수 사용)
-                console.log('generateBaselineMetrics 호출:', {
-                    baselineStatus: baselineStatus,
-                    currentBaselineResults: window.currentBaselineResults,
-                    profileData: profileData
-                });
-                generateBaselineMetrics(baselineStatus, window.currentBaselineResults);
+                // 베이스라인 메트릭 화면 제거됨
             }
         }
 
-        // 메트릭별 베이스라인 정보 생성
-        function generateBaselineMetrics(baselineStatus, baselineResults) {
-            console.log('generateBaselineMetrics 실행:', { baselineStatus, baselineResults, profileData });
-            const container = document.getElementById('baselineMetricsContainer');
-            container.innerHTML = '';
-
-            // 선택된 메트릭이 없는 경우 메시지 표시
-            if (!profileData.selected_metrics || profileData.selected_metrics.length === 0) {
-                container.innerHTML = '<div style="padding: 1rem; text-align: center; color: #94a3b8;">선택된 분석 메트릭이 없습니다</div>';
-                return;
-            }
-
-            // 메트릭 이름 매핑
-            const metricNameMap = {
-                'login_time_pattern': '로그인 시간 패턴',
-                'session_duration': '세션 지속 시간',
-                'after_hours_activity': '업무시간 외 활동',
-                'weekend_holiday_access': '주말/휴일 접근',
-                'login_frequency_change': '로그인 빈도 변화',
-                'concurrent_session_detection': '동시 세션 탐지',
-                'timezone_anomaly_access': '시간대 이상 접근',
-                'ip_address_pattern': 'IP 주소 패턴',
-                'geo_location_analysis': '지리적 위치 분석',
-                'data_volume_transfer': '데이터 전송량',
-                'impossible_travel_detection': '불가능한 이동 탐지',
-                'vpn_usage_pattern': 'VPN 사용 패턴',
-                'network_device_change': '디바이스 변경 탐지',
-                'bandwidth_usage_anomaly': '대역폭 사용량 이상',
-                'connection_pattern_analysis': '연결 패턴 분석',
-                'proxy_bypass_attempt': '프록시 우회 시도',
-                'resource_access_pattern': '리소스 접근 패턴',
-                'file_download_pattern': '파일 다운로드 패턴',
-                'application_usage_pattern': '애플리케이션 사용 패턴',
-                'shared_folder_access': '공유 폴더 접근'
-            };
-
-            // 메트릭 카테고리화
-            const categorizedMetrics = {
-                time: ['login_time_pattern', 'session_duration', 'after_hours_activity', 'weekend_holiday_access', 'login_frequency_change', 'concurrent_session_detection', 'timezone_anomaly_access'],
-                network: ['ip_address_pattern', 'geo_location_analysis', 'data_volume_transfer', 'impossible_travel_detection', 'vpn_usage_pattern', 'network_device_change', 'bandwidth_usage_anomaly', 'connection_pattern_analysis', 'proxy_bypass_attempt'],
-                access: ['resource_access_pattern', 'file_download_pattern', 'application_usage_pattern', 'shared_folder_access']
-            };
-
-            // 카테고리별로 메트릭 그룹화
-            const groupedMetrics = {
-                time: [],
-                network: [],
-                access: []
-            };
-
-            profileData.selected_metrics.forEach(metric => {
-                if (categorizedMetrics.time.includes(metric)) {
-                    groupedMetrics.time.push(metric);
-                } else if (categorizedMetrics.network.includes(metric)) {
-                    groupedMetrics.network.push(metric);
-                } else if (categorizedMetrics.access.includes(metric)) {
-                    groupedMetrics.access.push(metric);
-                }
-            });
-
-            // 카테고리별 HTML 생성
-            const categoryNames = {
-                time: '⏰ 시간 기반 분석',
-                network: '🌐 네트워크 분석',
-                access: '🔐 접근 패턴 분석'
-            };
-
-            Object.keys(groupedMetrics).forEach(category => {
-                if (groupedMetrics[category].length > 0) {
-                    let categoryHtml = `
-                        <div style="margin-bottom: 2rem;">
-                            <h3 style="margin-bottom: 1rem; color: #a5b4fc; font-size: 1.1rem;">${categoryNames[category]}</h3>
-                            <div style="display: grid; gap: 1rem;">
-                    `;
-
-                    groupedMetrics[category].forEach(metric => {
-                        const metricName = metricNameMap[metric] || metric;
-
-                        // 베이스라인 상태에 따른 상태 결정
-                        let status = '대기중';
-                        let statusColor = '#94a3b8';
-
-                        if (baselineStatus && baselineStatus.baseline_count > 0) {
-                            status = '완료';
-                            statusColor = '#10b981';
-                        } else if (baselineStatus && baselineStatus.latest_job) {
-                            if (baselineStatus.latest_job.status === 'success') {
-                                status = '완료';
-                                statusColor = '#10b981';
-                            } else if (baselineStatus.latest_job.status === 'failed') {
-                                status = '실패';
-                                statusColor = '#ef4444';
-                            } else if (baselineStatus.latest_job.status === 'running') {
-                                status = '진행중';
-                                statusColor = '#f59e0b';
-                            }
-                        }
-
-                        // 베이스라인 데이터에서 품질 점수 가져오기
-                        let qualityScore = 0;
-                        let normalMin = 60;
-                        let normalMax = 95;
-                        let currentValue = 0;
-                        let normalRangeInfo = '정상 범위 정보를 불러오는 중...';
-
-                        if (baselineResults && baselineResults.baselines) {
-                            const metricBaseline = baselineResults.baselines.find(b => b.metric_name === metric);
-                            if (metricBaseline) {
-                                qualityScore = (metricBaseline.quality_score || 0) * 100;
-                                currentValue = qualityScore;
-
-                                // 베이스라인 상세 정보 비동기로 가져오기
-                                fetchBaselineDetailAsync(metric, metricBaseline.baseline_id)
-                                    .then(detailInfo => {
-                                        const detailElement = document.getElementById(`baseline-detail-${metric}`);
-                                        if (detailElement) {
-                                            detailElement.innerHTML = detailInfo;
-                                        }
-                                    })
-                                    .catch(error => {
-                                        console.error(`베이스라인 상세 정보 로드 실패 (${metric}):`, error);
-                                        const detailElement = document.getElementById(`baseline-detail-${metric}`);
-                                        if (detailElement) {
-                                            detailElement.innerHTML = '정상 범위 정보를 가져올 수 없습니다.';
-                                        }
-                                    });
-                            }
-                        }
-
-                        // 상태 및 색상 결정
-                        let rangeStatus = '분석중';
-                        let rangeColor = '#94a3b8';
-                        let valueColor = '#94a3b8';
-
-                        if (status === '완료' && qualityScore > 0) {
-                            if (currentValue >= normalMin && currentValue <= normalMax) {
-                                rangeStatus = '정상';
-                                rangeColor = '#10b981';
-                                valueColor = '#10b981';
-                            } else if (currentValue >= 45 && currentValue < normalMin) {
-                                rangeStatus = '주의';
-                                rangeColor = '#f59e0b';
-                                valueColor = '#f59e0b';
-                            } else {
-                                rangeStatus = '위험';
-                                rangeColor = '#ef4444';
-                                valueColor = '#ef4444';
-                            }
-                        }
-
-                        categoryHtml += `
-                            <div style="
-                                background: rgba(30, 41, 59, 0.5);
-                                border: 1px solid rgba(51, 65, 85, 0.3);
-                                border-radius: 0.5rem;
-                                padding: 1rem;
-                            ">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                    <h4 style="color: #e2e8f0; font-size: 1rem;">${metricName}</h4>
-                                    <span style="
-                                        background: rgba(51, 65, 85, 0.5);
-                                        color: ${statusColor};
-                                        padding: 0.25rem 0.5rem;
-                                        border-radius: 0.25rem;
-                                        font-size: 0.8rem;
-                                    ">${status}</span>
-                                </div>
-
-                                ${status === '완료' && qualityScore > 0 ? `
-                                    <!-- 정상 범위 표시 영역 -->
-                                    <div style="margin-bottom: 0.75rem;">
-                                        <!-- 실제 정상 범위 정보 표시 -->
-                                        <div style="margin-bottom: 0.75rem; padding: 0.5rem; background: rgba(51, 65, 85, 0.3); border-radius: 0.25rem;">
-                                            <div style="color: #a5b4fc; font-size: 0.8rem; margin-bottom: 0.25rem;">📊 실제 정상 범위:</div>
-                                            <div id="baseline-detail-${metric}" style="color: #cbd5e1; font-size: 0.75rem; line-height: 1.4;">
-                                                ${normalRangeInfo}
-                                            </div>
-                                        </div>
-
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                            <span style="color: #94a3b8; font-size: 0.8rem;">베이스라인 품질 점수</span>
-                                            <span style="color: ${valueColor}; font-weight: 600; font-size: 0.9rem;">
-                                                ${currentValue.toFixed(1)}% (${rangeStatus})
-                                            </span>
-                                        </div>
-
-                                        <!-- 진행 바 -->
-                                        <div style="
-                                            position: relative;
-                                            height: 8px;
-                                            background: rgba(51, 65, 85, 0.5);
-                                            border-radius: 4px;
-                                            overflow: hidden;
-                                        ">
-                                            <!-- 정상 범위 표시 (60-95%) -->
-                                            <div style="
-                                                position: absolute;
-                                                left: ${normalMin}%;
-                                                width: ${normalMax - normalMin}%;
-                                                height: 100%;
-                                                background: rgba(16, 185, 129, 0.3);
-                                                border-left: 2px solid #10b981;
-                                                border-right: 2px solid #10b981;
-                                            "></div>
-
-                                            <!-- 현재 값 표시 -->
-                                            <div style="
-                                                position: absolute;
-                                                left: ${Math.min(Math.max(currentValue, 0), 100)}%;
-                                                width: 3px;
-                                                height: 12px;
-                                                background: ${valueColor};
-                                                border-radius: 2px;
-                                                transform: translateX(-50%) translateY(-2px);
-                                                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-                                            "></div>
-                                        </div>
-
-                                        <!-- 범위 라벨 -->
-                                        <div style="display: flex; justify-content: space-between; margin-top: 0.25rem; font-size: 0.7rem; color: #64748b;">
-                                            <span>0%</span>
-                                            <span style="color: #10b981;">정상 범위: ${normalMin}-${normalMax}%</span>
-                                            <span>100%</span>
-                                        </div>
-                                    </div>
-                                ` : ''}
-
-                                <div style="color: #94a3b8; font-size: 0.9rem;">
-                                    ${getMetricDescription(metric)}
-                                </div>
-                            </div>
-                        `;
-                    });
-
-                    categoryHtml += `
-                            </div>
-                        </div>
-                    `;
-
-                    container.innerHTML += categoryHtml;
-                }
-            });
-
-            // 메트릭이 없는 경우
-            if (container.innerHTML === '') {
-                container.innerHTML = '<div style="padding: 1rem; text-align: center; color: #94a3b8;">분석 가능한 메트릭이 없습니다</div>';
-            }
-        }
-
-        // 메트릭 설명 반환
-        function getMetricDescription(metric) {
-            const descriptions = {
-                'login_time_pattern': '사용자의 일반적인 로그인 시간 패턴을 분석하여 비정상적인 시간대 접근을 탐지합니다.',
-                'session_duration': '평균 세션 지속 시간을 분석하여 비정상적으로 긴 세션을 탐지합니다.',
-                'after_hours_activity': '업무 시간 외 활동 패턴을 분석하여 의심스러운 접근을 탐지합니다.',
-                'weekend_holiday_access': '주말이나 휴일의 접근 패턴을 분석합니다.',
-                'login_frequency_change': '로그인 빈도의 급격한 변화를 탐지합니다.',
-                'concurrent_session_detection': '동시에 여러 세션이 활성화되는 경우를 탐지합니다.',
-                'timezone_anomaly_access': '비정상적인 시간대에서의 접근을 탐지합니다.',
-                'ip_address_pattern': 'IP 주소 변경 패턴을 분석하여 비정상적인 접근을 탐지합니다.',
-                'geo_location_analysis': '지리적 위치 변화를 분석하여 의심스러운 접근을 탐지합니다.',
-                'data_volume_transfer': '데이터 전송량의 비정상적인 증가를 탐지합니다.',
-                'impossible_travel_detection': '물리적으로 불가능한 이동을 탐지합니다.',
-                'vpn_usage_pattern': 'VPN 사용 패턴의 변화를 분석합니다.',
-                'network_device_change': '네트워크 디바이스 변경을 탐지합니다.',
-                'bandwidth_usage_anomaly': '대역폭 사용량의 비정상적인 패턴을 탐지합니다.',
-                'connection_pattern_analysis': '네트워크 연결 패턴을 분석합니다.',
-                'proxy_bypass_attempt': '프록시 우회 시도를 탐지합니다.',
-                'resource_access_pattern': '리소스 접근 패턴의 변화를 분석합니다.',
-                'file_download_pattern': '파일 다운로드 패턴의 이상을 탐지합니다.',
-                'application_usage_pattern': '애플리케이션 사용 패턴을 분석합니다.',
-                'shared_folder_access': '공유 폴더 접근 패턴을 분석합니다.'
-            };
-            return descriptions[metric] || '이 메트릭에 대한 베이스라인 분석을 수행합니다.';
-        }
-
-        // 베이스라인 상세 정보를 비동기로 가져오는 함수
-        async function fetchBaselineDetailAsync(metricName, baselineId) {
-            try {
-                const response = await fetch(`/api/baseline-engine/baselines/${profileData.id}/${baselineId}`);
-
-                if (!response.ok) {
-                    throw new Error(`베이스라인 상세 조회 실패: ${response.status}`);
-                }
-
-                const data = await response.json();
-                const baselineDetail = data.data;
-
-                return extractNormalRangeInfo(baselineDetail, metricName);
-            } catch (error) {
-                console.error(`베이스라인 상세 정보 조회 오류 (${metricName}):`, error);
-                return '정상 범위 정보 조회 중 오류가 발생했습니다.';
-            }
-        }
-
-        // 베이스라인 상세 정보에서 정상 범위 정보 추출
-        function extractNormalRangeInfo(baselineDetail, metricName) {
-            console.log(`${metricName} 베이스라인 상세 정보 전체 구조:`, JSON.stringify(baselineDetail, null, 2));
-
-            if (!baselineDetail) {
-                return '베이스라인 상세 정보가 없습니다.';
-            }
-
-            // 실제 베이스라인 정보에서 사용 가능한 필드들 확인
-            const availableFields = Object.keys(baselineDetail);
-            console.log(`${metricName} 사용 가능한 필드들:`, availableFields);
-
-            // 기본 정보들
-            const profileId = baselineDetail.profile_id;
-            const baselineId = baselineDetail.baseline_id;
-            const version = baselineDetail.version;
-            const qualityScore = baselineDetail.quality_score;
-            const status = baselineDetail.status;
-            const createdAt = baselineDetail.created_at;
-
-            // 품질 점수 안전하게 처리
-            let qualityScoreText = '정보 없음';
-            if (typeof qualityScore === 'number' && !isNaN(qualityScore)) {
-                qualityScoreText = `${(qualityScore * 100).toFixed(1)}%`;
-            } else {
-                console.log(`${metricName} - quality_score 값:`, qualityScore, typeof qualityScore);
-            }
-
-            // 생성 날짜 포맷팅
-            let createdDateText = '정보 없음';
-            if (createdAt) {
-                try {
-                    const date = new Date(createdAt);
-                    createdDateText = date.toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                } catch (e) {
-                    createdDateText = createdAt;
-                }
-            }
-
-            // 메트릭별 맞춤형 정상 범위 정보 생성
-            let normalRangeInfo = '';
-
-            switch(metricName) {
-                case 'login_time_pattern':
-                    normalRangeInfo = `
-                        <strong>📊 로그인 시간 패턴 정상 범위</strong><br>
-                        • 주요 로그인 시간: 오전 9시 ~ 오후 6시<br>
-                        • 피크 시간대: 오전 10시, 오후 2시<br>
-                        • 주말 로그인: 월 2-3회<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-                    break;
-
-                case 'session_duration':
-                    normalRangeInfo = `
-                        <strong>📊 세션 지속 시간 정상 범위</strong><br>
-                        • 정상 세션 시간: 30분 ~ 2시간<br>
-                        • 평균 세션 시간: 75분<br>
-                        • 최대 허용 시간: 4시간<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-                    break;
-
-                case 'ip_address_pattern':
-                    normalRangeInfo = `
-                        <strong>📊 IP 주소 패턴 정상 범위</strong><br>
-                        • 주요 IP 개수: 3-5개<br>
-                        • 내부 네트워크: 192.168.x.x 대역<br>
-                        • 외부 접속: 월 10회 이하<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-                    break;
-
-                case 'data_volume_transfer':
-                    normalRangeInfo = `
-                        <strong>📊 데이터 전송량 정상 범위</strong><br>
-                        • 일일 데이터량: 100MB ~ 1GB<br>
-                        • 평균 업로드: 50MB/일<br>
-                        • 평균 다운로드: 200MB/일<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-                    break;
-
-                case 'geo_location_analysis':
-                    normalRangeInfo = `
-                        <strong>📊 지리적 위치 정상 범위</strong><br>
-                        • 주요 접속지: 서울, 경기도<br>
-                        • 허용 지역: 국내 주요 도시<br>
-                        • 해외 접속: 사전 승인 필요<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-                    break;
-
-                case 'vpn_usage_pattern':
-                    normalRangeInfo = `
-                        <strong>📊 VPN 사용 패턴 정상 범위</strong><br>
-                        • 일평균 VPN 세션: 3-5회<br>
-                        • 세션당 평균 시간: 2시간<br>
-                        • 주요 VPN 서버: 국내 3개 서버<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-                    break;
-
-                case 'weekend_holiday_access':
-                    normalRangeInfo = `
-                        <strong>📊 주말/휴일 접속 정상 범위</strong><br>
-                        • 주말 접속 빈도: 월 2-3회<br>
-                        • 휴일 접속 시간: 1-2시간<br>
-                        • 접속 목적: 긴급 업무 처리<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-                    break;
-
-                case 'after_hours_activity':
-                    normalRangeInfo = `
-                        <strong>📊 시간 외 활동 정상 범위</strong><br>
-                        • 야간 접속 빈도: 주 1-2회<br>
-                        • 시간 외 세션: 30분 이하<br>
-                        • 허용 시간대: 18:00 ~ 22:00<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-                    break;
-
-                case 'login_frequency_change':
-                    normalRangeInfo = `
-                        <strong>📊 로그인 빈도 변화 정상 범위</strong><br>
-                        • 일평균 로그인: 5-10회<br>
-                        • 허용 변동 폭: ±20%<br>
-                        • 주간 패턴: 월-금 활발, 주말 감소<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-                    break;
-
-                default:
-                    normalRangeInfo = `
-                        <strong>📊 ${metricName} 베이스라인 정보</strong><br>
-                        • 베이스라인 ID: ${baselineId || '정보 없음'}<br>
-                        • 버전: v${version || '1'}<br>
-                        • 상태: ${status || 'active'}<br>
-                        • 품질 점수: ${qualityScoreText}<br>
-                        • 베이스라인 생성일: ${createdDateText}
-                    `;
-            }
-
-            return normalRangeInfo;
-        }
+        // generateBaselineMetrics 함수 및 관련 함수들 제거됨
 
         // 실제 베이스라인 결과 기반 위험 점수 계산
         function calculateRiskScore(baselineStatus, baselineResults) {
@@ -2261,8 +1699,10 @@
             const profileId = getProfileIdFromUrl();
             await loadHourlyPatternsData(profileId);
 
-            // 2. 행동 패턴 차트 업데이트
-            updateBehaviorPatternChart(baselineResults);
+            // 2. 3가지 분석 차트 업데이트
+            updateTimeBasedChart(baselineResults);
+            updateNetworkBasedChart(baselineResults);
+            updateAccessBasedChart(baselineResults);
 
             // 3. 이상 탐지 결과 업데이트
             updateAnomalyDetectionResults(baselineResults);
@@ -2273,14 +1713,7 @@
             // 5. 권장사항 업데이트
             updateRecommendations(baselineResults);
 
-            // 6. 베이스라인 메트릭 정상 범위 그래프 업데이트
-            if (profileData && window.currentBaselineResults) {
-                const baselineStatusElement = document.getElementById('baselineStatus');
-                if (baselineStatusElement) {
-                    // 기존 베이스라인 상태 정보 유지하면서 메트릭 그래프만 업데이트
-                    generateBaselineMetrics(null, window.currentBaselineResults);
-                }
-            }
+            // 베이스라인 메트릭 화면 제거됨
         }
 
         // 플레이스홀더 차트 업데이트
@@ -2328,14 +1761,13 @@
             });
         }
 
-        // 행동 패턴 차트 업데이트 (Chart.js 레이더 차트)
-        function updateBehaviorPatternChart(baselineResults) {
-            const chartContainer = document.getElementById('behaviorPatternChart');
+        // 시간 기반 분석 차트 업데이트
+        function updateTimeBasedChart(baselineResults) {
+            const chartContainer = document.getElementById('timeBasedChart');
             if (!chartContainer || !baselineResults) return;
 
             // Chart container 초기화
             chartContainer.innerHTML = '';
-            chartContainer.style.height = '400px';
             chartContainer.style.position = 'relative';
 
             // Canvas 생성
@@ -2346,42 +1778,189 @@
 
             const baselines = baselineResults.baselines || [];
 
-            // 주요 메트릭들만 선택 (레이더 차트에서 너무 많으면 보기 어려움)
-            const keyMetrics = [
+            // 시간 기반 메트릭들
+            const timeMetrics = [
                 'login_time_pattern',
                 'session_duration',
-                'vpn_usage_pattern',
-                'geo_location_analysis',
-                'data_volume_transfer',
-                'network_device_change'
+                'after_hours_activity',
+                'weekend_holiday_access',
+                'login_frequency_change'
             ];
 
-            // 베이스라인에서 키 메트릭 추출
+            // 베이스라인에서 시간 관련 메트릭 추출
             const availableMetrics = baselines
-                .filter(baseline => keyMetrics.includes(baseline.metric_name))
-                .slice(0, 8); // 최대 8개로 제한
+                .filter(baseline => timeMetrics.includes(baseline.metric_name))
+                .slice(0, 5);
+
+            // 디버깅 정보 출력
+            console.log('시간 기반 분석 - 사용 가능한 메트릭:', availableMetrics.map(m => m.metric_name));
+
+            // 차트 제목 업데이트
+            const timeBasedTitle = document.querySelector('#timeBasedChart').closest('div').querySelector('h4');
+            if (timeBasedTitle) {
+                timeBasedTitle.innerHTML = `
+                    <span style="font-size: 1.5rem; margin-right: 0.5rem;">⏰</span>
+                    시간 기반 분석
+                    <span style="background: rgba(99, 102, 241, 0.3); color: #c7d2fe; padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; margin-left: 0.5rem;">
+                        ${availableMetrics.length}개 메트릭
+                    </span>
+                `;
+            }
 
             if (availableMetrics.length === 0) {
                 chartContainer.innerHTML = `
-                    <div style="display: flex; align-items: center; justify-content: center; height: 400px; color: #94a3b8; text-align: center;">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 250px; color: #94a3b8; text-align: center;">
                         <div>
-                            <div style="font-size: 2rem; margin-bottom: 1rem;">🎯</div>
-                            <div>행동 패턴 분석을 위한 베이스라인 데이터가 부족합니다</div>
-                            <div style="font-size: 0.8rem; margin-top: 0.5rem;">더 많은 데이터가 수집되면 패턴 분석이 표시됩니다</div>
+                            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⏰</div>
+                            <div style="font-size: 0.9rem;">시간 기반 분석 데이터 없음</div>
                         </div>
                     </div>
                 `;
                 return;
             }
 
-            // 레이더 차트 데이터 준비
+            // 바 차트 데이터 준비 (실제 베이스라인 데이터 사용)
             const labels = availableMetrics.map(metric => getMetricDisplayName(metric.metric_name));
+            const currentData = availableMetrics.map(metric => (metric.quality_score || 0) * 100);
 
-            // 현재 행동 데이터 (평균적으로 80-90% 범위)
-            const currentBehaviorData = availableMetrics.map(metric => (metric.quality_score || 0) * 100);
+            // 품질 점수에 따른 색상 결정
+            const backgroundColors = currentData.map(score => {
+                if (score >= 80) return 'rgba(34, 197, 94, 0.6)';      // 녹색
+                if (score >= 60) return 'rgba(234, 179, 8, 0.6)';       // 노란색
+                return 'rgba(239, 68, 68, 0.6)';                        // 빨간색
+            });
 
-            // 정상 베이스라인 데이터 (평균적으로 80-90% 범위)
-            const baselineData = availableMetrics.map(() => 85 + Math.random() * 10);
+            const borderColors = currentData.map(score => {
+                if (score >= 80) return '#22c55e';     // 녹색
+                if (score >= 60) return '#eab308';      // 노란색
+                return '#ef4444';                       // 빨간색
+            });
+
+            // 실제 사용된 메트릭 목록 업데이트
+            const timeBasedMetricsList = document.getElementById('timeBasedMetricsList');
+            if (timeBasedMetricsList) {
+                const metricNames = availableMetrics.map(m => getMetricDisplayName(m.metric_name)).join(', ');
+                timeBasedMetricsList.innerHTML = `실제 분석된 메트릭: ${metricNames}`;
+            }
+
+            // Chart.js 바 차트 생성
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '품질 점수',
+                            data: currentData,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                color: '#94a3b8'
+                            },
+                            grid: {
+                                color: 'rgba(148, 163, 184, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#94a3b8',
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 네트워크 기반 분석 차트 업데이트
+        function updateNetworkBasedChart(baselineResults) {
+            const chartContainer = document.getElementById('networkBasedChart');
+            if (!chartContainer || !baselineResults) return;
+
+            // Chart container 초기화
+            chartContainer.innerHTML = '';
+            chartContainer.style.position = 'relative';
+
+            // Canvas 생성
+            const canvas = document.createElement('canvas');
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            chartContainer.appendChild(canvas);
+
+            const baselines = baselineResults.baselines || [];
+
+            // 네트워크 기반 메트릭들
+            const networkMetrics = [
+                'ip_address_pattern',
+                'geo_location_analysis',
+                'data_volume_transfer',
+                'impossible_travel_detection',
+                'vpn_usage_pattern'
+            ];
+
+            // 베이스라인에서 네트워크 관련 메트릭 추출
+            const availableMetrics = baselines
+                .filter(baseline => networkMetrics.includes(baseline.metric_name))
+                .slice(0, 5);
+
+            // 디버깅 정보 출력
+            console.log('네트워크 기반 분석 - 사용 가능한 메트릭:', availableMetrics.map(m => m.metric_name));
+
+            // 차트 제목 업데이트
+            const networkBasedTitle = document.querySelector('#networkBasedChart').closest('div').querySelector('h4');
+            if (networkBasedTitle) {
+                networkBasedTitle.innerHTML = `
+                    <span style="font-size: 1.5rem; margin-right: 0.5rem;">🌐</span>
+                    네트워크 기반 분석
+                    <span style="background: rgba(6, 182, 212, 0.3); color: #7dd3fc; padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; margin-left: 0.5rem;">
+                        ${availableMetrics.length}개 메트릭
+                    </span>
+                `;
+            }
+
+            if (availableMetrics.length === 0) {
+                chartContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 250px; color: #94a3b8; text-align: center;">
+                        <div>
+                            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🌐</div>
+                            <div style="font-size: 0.9rem;">네트워크 기반 분석 데이터 없음</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 레이더 차트 데이터 준비 (실제 베이스라인 데이터 사용)
+            const labels = availableMetrics.map(metric => getMetricDisplayName(metric.metric_name));
+            const currentData = availableMetrics.map(metric => (metric.quality_score || 0) * 100);
+
+            // 실제 사용된 메트릭 목록 업데이트
+            const networkBasedMetricsList = document.getElementById('networkBasedMetricsList');
+            if (networkBasedMetricsList) {
+                const metricNames = availableMetrics.map(m => getMetricDisplayName(m.metric_name)).join(', ');
+                networkBasedMetricsList.innerHTML = `실제 분석된 메트릭: ${metricNames}`;
+            }
 
             // Chart.js 레이더 차트 생성
             new Chart(canvas, {
@@ -2390,24 +1969,12 @@
                     labels: labels,
                     datasets: [
                         {
-                            label: '현재 행동',
-                            data: currentBehaviorData,
-                            borderColor: '#6366f1',
-                            backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                            label: '품질 점수',
+                            data: currentData,
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'rgba(6, 182, 212, 0.2)',
                             borderWidth: 2,
-                            pointBackgroundColor: '#6366f1',
-                            pointBorderColor: '#ffffff',
-                            pointBorderWidth: 2,
-                            pointRadius: 4
-                        },
-                        {
-                            label: '정상 베이스라인',
-                            data: baselineData,
-                            borderColor: '#4ade80',
-                            backgroundColor: 'rgba(74, 222, 128, 0.1)',
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointBackgroundColor: '#4ade80',
+                            pointBackgroundColor: '#06b6d4',
                             pointBorderColor: '#ffffff',
                             pointBorderWidth: 2,
                             pointRadius: 3
@@ -2418,33 +1985,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: {
-                            display: true,
-                            text: '행동 패턴 분석 (레이더 차트)',
-                            color: '#e2e8f0',
-                            font: {
-                                size: 16,
-                                weight: 'bold'
-                            }
-                        },
                         legend: {
-                            position: 'bottom',
-                            labels: {
-                                color: '#e2e8f0',
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                padding: 20
-                            }
-                        },
-                                                tooltip: {
-                            callbacks: {
-                                title: function(tooltipItems) {
-                                    return tooltipItems[0].label;
-                                },
-                                label: function(context) {
-                                    return `${context.dataset.label}: ${context.parsed.r.toFixed(1)}%`;
-                                }
-                            }
+                            display: false
                         }
                     },
                     scales: {
@@ -2452,40 +1994,141 @@
                             beginAtZero: true,
                             max: 100,
                             ticks: {
-                                stepSize: 20,
                                 color: '#94a3b8',
-                                backdropColor: 'transparent'
+                                font: {
+                                    size: 10
+                                }
                             },
                             grid: {
-                                color: 'rgba(51, 65, 85, 0.5)'
-                            },
-                            angleLines: {
-                                color: 'rgba(51, 65, 85, 0.5)'
+                                color: 'rgba(148, 163, 184, 0.1)'
                             },
                             pointLabels: {
-                                color: '#e2e8f0',
+                                color: '#94a3b8',
                                 font: {
-                                    size: 12
+                                    size: 10
                                 }
                             }
                         }
-                    },
-                    interaction: {
-                        intersect: false
                     }
                 }
             });
+        }
 
-            // 분석 요약 정보 추가
-            const summaryHtml = `
-                <div style="position: absolute; top: 10px; left: 10px; background: rgba(30, 41, 59, 0.9); padding: 0.75rem; border-radius: 0.5rem; font-size: 0.8rem; max-width: 200px;">
-                    <div style="color: #a5b4fc; margin-bottom: 0.5rem; font-weight: 600;">🎯 패턴 분석</div>
-                    <div style="color: #e2e8f0; margin-bottom: 0.25rem;">분석 메트릭: ${availableMetrics.length}개</div>
-                    <div style="color: #10b981; margin-bottom: 0.25rem;">평균 일치율: ${(currentBehaviorData.reduce((a,b) => a+b, 0) / currentBehaviorData.length).toFixed(1)}%</div>
-                    <div style="color: #94a3b8;">상태: ${currentBehaviorData.reduce((a,b) => a+b, 0) / currentBehaviorData.length > 70 ? '정상' : '주의'}</div>
-                </div>
-            `;
-            chartContainer.insertAdjacentHTML('beforeend', summaryHtml);
+        // 접근 기반 분석 차트 업데이트
+        function updateAccessBasedChart(baselineResults) {
+            const chartContainer = document.getElementById('accessBasedChart');
+            if (!chartContainer || !baselineResults) return;
+
+            // Chart container 초기화
+            chartContainer.innerHTML = '';
+            chartContainer.style.position = 'relative';
+
+            // Canvas 생성
+            const canvas = document.createElement('canvas');
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            chartContainer.appendChild(canvas);
+
+            const baselines = baselineResults.baselines || [];
+
+            // 접근 기반 메트릭들
+            const accessMetrics = [
+                'concurrent_session_detection',
+                'network_device_change',
+                'bandwidth_usage_anomaly',
+                'connection_pattern_analysis',
+                'timezone_anomaly_access'
+            ];
+
+            // 베이스라인에서 접근 관련 메트릭 추출
+            const availableMetrics = baselines
+                .filter(baseline => accessMetrics.includes(baseline.metric_name))
+                .slice(0, 5);
+
+            // 디버깅 정보 출력
+            console.log('접근 기반 분석 - 사용 가능한 메트릭:', availableMetrics.map(m => m.metric_name));
+
+            // 차트 제목 업데이트
+            const accessBasedTitle = document.querySelector('#accessBasedChart').closest('div').querySelector('h4');
+            if (accessBasedTitle) {
+                accessBasedTitle.innerHTML = `
+                    <span style="font-size: 1.5rem; margin-right: 0.5rem;">🔐</span>
+                    접근 기반 분석
+                    <span style="background: rgba(168, 85, 247, 0.3); color: #d8b4fe; padding: 0.2rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; margin-left: 0.5rem;">
+                        ${availableMetrics.length}개 메트릭
+                    </span>
+                `;
+            }
+
+            if (availableMetrics.length === 0) {
+                chartContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 250px; color: #94a3b8; text-align: center;">
+                        <div>
+                            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔐</div>
+                            <div style="font-size: 0.9rem;">접근 기반 분석 데이터 없음</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // 도넛 차트 데이터 준비 (실제 베이스라인 데이터 사용)
+            const labels = availableMetrics.map(metric => getMetricDisplayName(metric.metric_name));
+            const currentData = availableMetrics.map(metric => (metric.quality_score || 0) * 100);
+
+            // 품질 점수에 따른 색상 결정
+            const backgroundColors = currentData.map(score => {
+                if (score >= 80) return 'rgba(34, 197, 94, 0.6)';      // 녹색
+                if (score >= 60) return 'rgba(234, 179, 8, 0.6)';       // 노란색
+                return 'rgba(239, 68, 68, 0.6)';                        // 빨간색
+            });
+
+            const borderColors = currentData.map(score => {
+                if (score >= 80) return '#22c55e';     // 녹색
+                if (score >= 60) return '#eab308';      // 노란색
+                return '#ef4444';                       // 빨간색
+            });
+
+            // 실제 사용된 메트릭 목록 업데이트
+            const accessBasedMetricsList = document.getElementById('accessBasedMetricsList');
+            if (accessBasedMetricsList) {
+                const metricNames = availableMetrics.map(m => getMetricDisplayName(m.metric_name)).join(', ');
+                accessBasedMetricsList.innerHTML = `실제 분석된 메트릭: ${metricNames}`;
+            }
+
+            // Chart.js 도넛 차트 생성
+            new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            data: currentData,
+                            backgroundColor: backgroundColors,
+                            borderColor: borderColors,
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#94a3b8',
+                                font: {
+                                    size: 10
+                                },
+                                padding: 10,
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // 이상 탐지 결과 업데이트

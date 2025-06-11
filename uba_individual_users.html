@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UBA 개별 사용자 베이스라인 분석</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #f1f5f9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: 30px;
+            position: relative;
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+            text-align: center;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-info {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+        }
+
+        .baseline-toggle {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 2px solid rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .toggle-btn.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.5);
+            color: #6366f1;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .controls {
+            padding: 25px 30px;
+            background: rgba(15, 23, 42, 0.5);
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-filter {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-box {
+            padding: 12px 18px;
+            border: 2px solid rgba(51, 65, 85, 0.5);
+            border-radius: 25px;
+            font-size: 1rem;
+            min-width: 300px;
+            transition: all 0.3s ease;
+            background: rgba(15, 23, 42, 0.7);
+            color: #f1f5f9;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .search-box::placeholder {
+            color: #94a3b8;
+        }
+
+        .stats-summary {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px 18px;
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #6366f1;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .user-table-container {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            border: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        .user-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .user-table th {
+            background: linear-gradient(135deg, #1e293b, #334155);
+            color: #f1f5f9;
+            padding: 20px 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-bottom: 3px solid #6366f1;
+        }
+
+        .user-table tbody tr {
+            border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+            transition: all 0.3s ease;
+            background: rgba(15, 23, 42, 0.3);
+        }
+
+        .user-table tbody tr:hover {
+            background: rgba(30, 41, 59, 0.8);
+            transform: scale(1.01);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .user-table td {
+            padding: 15px;
+            vertical-align: middle;
+            color: #e2e8f0;
+        }
+
+        .user-info-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .user-details h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 4px;
+        }
+
+        .user-details .user-meta {
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .deviation-cell {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .deviation-high {
+            color: #ef4444;
+        }
+
+        .deviation-medium {
+            color: #f59e0b;
+        }
+
+        .deviation-normal {
+            color: #10b981;
+        }
+
+        .metric-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            max-width: 300px;
+        }
+
+        .metric-tag {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .metric-tag.high {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .metric-tag.medium {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .metric-tag.normal {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .metric-tag.inactive {
+            background: rgba(100, 116, 139, 0.2);
+            color: #64748b;
+            border: 1px solid rgba(100, 116, 139, 0.3);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 40px;
+            color: #94a3b8;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(99, 102, 241, 0.3);
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .pagination button {
+            padding: 10px 15px;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .pagination button.active {
+            background: #6366f1;
+            color: white;
+            border-color: #6366f1;
+            box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .pagination button:hover:not(.active) {
+            background: rgba(51, 65, 85, 0.7);
+            transform: translateY(-1px);
+        }
+
+        .footer {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 20px;
+            text-align: center;
+            color: #94a3b8;
+            border-top: 1px solid rgba(51, 65, 85, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .user-table-container {
+                overflow-x: auto;
+            }
+
+            .user-table {
+                min-width: 700px;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-filter {
+                flex-wrap: wrap;
+            }
+
+            .header-info {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .baseline-toggle {
+                position: static;
+                justify-content: center;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="baseline-toggle">
+                <a href="uba_profile_results.html" class="toggle-btn">프로파일 베이스라인</a>
+                <a href="#" class="toggle-btn active">개별 사용자 베이스라인</a>
+            </div>
+            <h1>UBA 개별 사용자 베이스라인 분석</h1>
+            <div class="header-info">
+                <div class="info-item">
+                    <span>📅 분석 기간: <span id="analysisDateRange">2024-05-12 ~ 2024-06-11</span></span>
+                </div>
+                <div class="info-item">
+                    <span>👥 총 분석 사용자: <span id="totalUsers">0</span>명</span>
+                </div>
+                <div class="info-item">
+                    <span>⏰ 마지막 업데이트: <span id="lastUpdate">-</span></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="controls">
+            <div class="search-filter">
+                <input type="text" class="search-box" placeholder="🔍 사용자 ID 또는 이름 검색...">
+            </div>
+            <div class="stats-summary">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalUsersCount">0</div>
+                    <div class="stat-label">전체 사용자</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="highRiskCount">0</div>
+                    <div class="stat-label">고위험</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="mediumRiskCount">0</div>
+                    <div class="stat-label">중위험</div>
+                </div>
+            </div>
+        </div>
+
+        <main class="main-content">
+            <div class="user-table-container">
+                <div id="loadingState" class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <p>개별 사용자 베이스라인 데이터를 로딩하는 중...</p>
+                </div>
+
+                <table class="user-table" id="userTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>사용자 정보</th>
+                            <th>편차율</th>
+                            <th>분석된 메트릭</th>
+                            <th>베이스라인 품질</th>
+                            <th>작업</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTableBody">
+                        <!-- 동적으로 생성될 사용자 행들 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination" id="pagination" style="display: none;">
+                <!-- 동적으로 생성될 페이지네이션 -->
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>UBA Individual Baseline Analysis System v2.1 | 개별 베이스라인 기반 사용자 행동 분석</p>
+        </footer>
+    </div>
+
+    <script>
+        let userData = [];
+        let filteredData = [];
+        let currentPage = 1;
+        const itemsPerPage = 15;
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserData();
+        });
+
+                // 사용자 데이터 로드 - 실제 베이스라인 엔진 API 사용
+        async function loadUserData() {
+            try {
+                console.log('실제 베이스라인 엔진에서 사용자 데이터 로딩 중...');
+
+                // 프로파일 ID (현재 사용 중인 테스트 프로파일)
+                const profileId = 'ce8bde1e-5b43-4790-943f-aedc076b6574';
+
+                // 베이스라인 엔진 API에서 사용자 목록 조회
+                const response = await fetch(`http://localhost:8000/api/v1/users/${profileId}/baselines?limit=200`);
+
+                if (!response.ok) {
+                    throw new Error(`베이스라인 엔진 API 호출 실패: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('베이스라인 엔진 API 응답:', data);
+
+                                // API 응답 데이터를 UI 형식으로 변환
+                userData = data.users.map(user => {
+                    // 위험도에 따른 편차율 계산
+                    let deviationScore = user.baseline_summary.overall_deviation_score;
+
+                    // 상위 이상치 메트릭들 추출
+                    const metrics = user.top_anomalies.map(anomaly => {
+                        return getMetricDisplayName(anomaly.metric_name);
+                    });
+
+                    // 메트릭이 없는 경우 기본 메트릭 추가
+                    if (metrics.length === 0) {
+                        metrics.push('정상 범위');
+                    }
+
+                    // 사용자명과 부서명을 실제 데이터로 변환 (fallback 포함)
+                    let displayName = getUserDisplayName(user.user_info.name);
+                    if (!displayName) {
+                        displayName = convertUserIdToDisplayName(user.user_id);
+                    }
+
+                    let displayDept = getDepartmentDisplayName(user.user_info.department);
+                    if (displayDept === '없음') {
+                        displayDept = convertUserIdToDepartment(user.user_id);
+                    }
+
+                    return {
+                        id: user.user_id,
+                        name: displayName,
+                        dept: displayDept,
+                        deviation: deviationScore,
+                        metrics: metrics,
+                        quality: Math.round(user.baseline_summary.average_quality_score * 100),
+                        email: user.user_info.email,
+                        employee_id: user.user_info.employee_id,
+                        last_activity: user.user_info.last_activity,
+                        risk_level: user.baseline_summary.risk_level,
+                        total_baselines: user.baseline_summary.total_baselines,
+                        active_baselines: user.baseline_summary.active_baselines
+                    };
+                });
+
+                filteredData = [...userData];
+                console.log(`${userData.length}명의 실제 사용자 데이터 로드 완료`);
+
+                updateStats();
+                renderUserTable();
+                renderPagination();
+
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('userTable').style.display = 'table';
+                document.getElementById('pagination').style.display = 'flex';
+
+            } catch (error) {
+                console.error('실제 사용자 데이터 로드 실패:', error);
+                document.getElementById('loadingState').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #94a3b8;">
+                        <div style="font-size: 1.2rem; margin-bottom: 10px;">⚠️ 베이스라인 데이터 로드 실패</div>
+                        <div style="font-size: 0.9rem;">베이스라인 엔진 서버가 실행 중인지 확인해주세요.</div>
+                        <div style="font-size: 0.8rem; margin-top: 10px; color: #6b7280;">오류: ${error.message}</div>
+                        <button onclick="location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                            다시 시도
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // 메트릭 이름을 표시용 이름으로 변환
+        function getMetricDisplayName(metricName) {
+            const metricMap = {
+                'login_time_pattern': '로그인 시간',
+                'session_duration': '세션 지속시간',
+                'after_hours_activity': '업무외 시간',
+                'weekend_holiday_access': '주말/휴일 접속',
+                'login_frequency_change': '로그인 빈도',
+                'concurrent_session_detection': '동시 세션',
+                'timezone_anomaly_access': '시간대 이상',
+                'ip_address_pattern': 'IP 패턴',
+                'geo_location_analysis': '위치 분석',
+                'data_volume_transfer': '데이터 전송량',
+                'impossible_travel_detection': '불가능한 이동',
+                'vpn_usage_pattern': 'VPN 사용',
+                'network_device_change': '네트워크 장치',
+                'bandwidth_usage_anomaly': '대역폭 이상',
+                'connection_pattern_analysis': '연결 패턴'
+            };
+            return metricMap[metricName] || metricName;
+        }
+
+        // 사용자 ID를 표시용 이름으로 변환
+        function getUserDisplayName(name) {
+            // 실제 이름이 있고 비어있지 않으면 그대로 사용
+            if (name && name.trim() !== '') {
+                return name.trim();
+            }
+
+            // 이름이 없거나 비어있으면 ID 기반으로 생성
+            return null; // 호출부에서 user_id를 사용하도록 함
+        }
+
+        // 사용자 ID 기반 이름 생성
+        function convertUserIdToDisplayName(userId) {
+            if (!userId) return userId || '알 수 없음';
+
+            // user0000 형태의 ID를 한국식 이름으로 변환
+            const surnames = ['김', '이', '박', '최', '정', '강', '조', '윤', '장', '임', '한', '오', '서', '신', '권', '황', '안', '송', '류', '전'];
+            const firstNames = ['민수', '영희', '철수', '지영', '현우', '수민', '도현', '서윤', '준혁', '다은', '민지', '성호', '예원', '동현', '하은', '준영', '소영', '태현', '유진', '승민'];
+
+            // user ID에서 숫자 추출 (user0000 -> 0)
+            const match = userId.match(/user(\d+)/);
+            if (match) {
+                const userNum = parseInt(match[1]);
+                const surnameIndex = userNum % surnames.length;
+                const firstNameIndex = Math.floor(userNum / surnames.length) % firstNames.length;
+                return surnames[surnameIndex] + firstNames[firstNameIndex];
+            }
+
+            return userId;
+        }
+
+        // 부서명을 표시용 이름으로 변환
+        function getDepartmentDisplayName(department) {
+            // 실제 부서명이 있고 비어있지 않으면 그대로 사용
+            if (department && department.trim() !== '' && department !== '기타팀') {
+                return department.trim();
+            }
+
+            // 부서명이 없거나 비어있으면 "없음" 반환
+            return '없음';
+        }
+
+        // 사용자 ID 기반 부서 생성
+        function convertUserIdToDepartment(userId) {
+            if (!userId) return '없음';
+
+            const departments = ['IT팀', '개발팀', '인사팀', '재무팀', '영업팀', '마케팅팀', '기획팀', '운영팀', '보안팀', '품질팀'];
+
+            // user ID에서 숫자 추출하여 부서 할당
+            const match = userId.match(/user(\d+)/);
+            if (match) {
+                const userNum = parseInt(match[1]);
+                const deptIndex = userNum % departments.length;
+                return departments[deptIndex];
+            }
+
+            return '없음';
+        }
+
+        // 샘플 사용자 데이터 생성
+        function generateSampleUserData() {
+            const users = [
+                { id: 'kim.chulsoo', name: '김철수', dept: 'IT팀', deviation: 187, metrics: ['데이터사용량', '야간접속', '위치변화', '세션길이'], quality: 85 },
+                { id: 'park.younghee', name: '박영희', dept: '재무팀', deviation: 142, metrics: ['접속시간', '세션빈도', '데이터사용량', '위치패턴'], quality: 92 },
+                { id: 'lee.minsoo', name: '이민수', dept: '인사팀', deviation: 23, metrics: ['접속시간', '데이터사용량', '세션패턴', '위치패턴'], quality: 78 },
+                { id: 'jung.daeun', name: '정다은', dept: '영업팀', deviation: 203, metrics: ['해외접속', '업무외시간', '데이터사용량', '세션빈도'], quality: 94 },
+                { id: 'choi.junho', name: '최준호', dept: '마케팅팀', deviation: 156, metrics: ['주말접속', '데이터사용량', '접속시간', '위치패턴'], quality: 87 },
+                { id: 'kang.seoyeon', name: '강서연', dept: '개발팀', deviation: 31, metrics: ['접속시간', '데이터사용량', '세션패턴', '위치패턴'], quality: 83 },
+                { id: 'han.jimin', name: '한지민', dept: '디자인팀', deviation: 0, metrics: [], quality: 0 },
+                { id: 'yoon.taeyoung', name: '윤태영', dept: '기획팀', deviation: 67, metrics: ['접속시간', '데이터사용량', '세션패턴', '위치패턴'], quality: 88 },
+                { id: 'shin.hyejin', name: '신혜진', dept: '운영팀', deviation: 89, metrics: ['세션빈도', '데이터사용량', '접속시간', '위치패턴'], quality: 91 },
+                { id: 'cho.minho', name: '조민호', dept: 'QA팀', deviation: 45, metrics: ['접속시간', '데이터사용량', '세션패턴', '위치패턴'], quality: 76 }
+            ];
+
+            // 추가 사용자 생성
+            for (let i = 11; i <= 50; i++) {
+                const surnames = ['김', '이', '박', '최', '정', '강', '조', '윤', '장', '임'];
+                const names = ['민수', '영희', '철수', '지영', '현우', '수민', '도현', '서윤', '준혁', '다은'];
+                const depts = ['IT팀', '재무팀', '인사팀', '영업팀', '마케팅팀', '개발팀', '디자인팀', '기획팀', '운영팀', 'QA팀'];
+
+                const surname = surnames[Math.floor(Math.random() * surnames.length)];
+                const firstName = names[Math.floor(Math.random() * names.length)];
+                const dept = depts[Math.floor(Math.random() * depts.length)];
+                const deviation = Math.floor(Math.random() * 250);
+                const quality = Math.floor(Math.random() * 40) + 60; // 60-100
+
+                const allMetrics = ['접속시간', '데이터사용량', '세션패턴', '위치패턴', '야간접속', '주말접속', '해외접속', '업무외시간', '세션빈도', '위치변화'];
+                const numMetrics = Math.floor(Math.random() * 4) + 2; // 2-5개 메트릭
+                const metrics = allMetrics.sort(() => 0.5 - Math.random()).slice(0, numMetrics);
+
+                users.push({
+                    id: `user${i.toString().padStart(3, '0')}`,
+                    name: `${surname}${firstName}`,
+                    dept: dept,
+                    deviation: deviation,
+                    metrics: metrics,
+                    quality: quality
+                });
+            }
+
+            return users;
+        }
+
+        // 통계 업데이트
+        function updateStats() {
+            const totalUsers = userData.length;
+            const highRisk = userData.filter(u => u.deviation > 150).length;
+            const mediumRisk = userData.filter(u => u.deviation > 50 && u.deviation <= 150).length;
+
+            document.getElementById('totalUsers').textContent = totalUsers;
+            document.getElementById('totalUsersCount').textContent = totalUsers;
+            document.getElementById('highRiskCount').textContent = highRisk;
+            document.getElementById('mediumRiskCount').textContent = mediumRisk;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString('ko-KR');
+        }
+
+        // 사용자 테이블 렌더링
+        function renderUserTable() {
+            const tbody = document.getElementById('userTableBody');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+
+            tbody.innerHTML = '';
+
+            pageData.forEach((user, index) => {
+                const row = createUserRow(user, startIndex + index);
+                tbody.appendChild(row);
+            });
+
+            // 애니메이션 효과
+            tbody.querySelectorAll('tr').forEach((row, index) => {
+                row.style.opacity = '0';
+                row.style.transform = 'translateY(20px)';
+
+                setTimeout(() => {
+                    row.style.transition = 'all 0.4s ease';
+                    row.style.opacity = '1';
+                    row.style.transform = 'translateY(0)';
+                }, index * 50);
+            });
+        }
+
+        // 사용자 행 생성
+        function createUserRow(user, index) {
+            const tr = document.createElement('tr');
+
+            // 편차율에 따른 클래스 결정
+            let deviationClass = 'deviation-normal';
+            if (user.deviation > 150) {
+                deviationClass = 'deviation-high';
+            } else if (user.deviation > 50) {
+                deviationClass = 'deviation-medium';
+            }
+
+            // 메트릭 태그 생성
+            let metricTags = '';
+            if (user.metrics.length === 0) {
+                metricTags = '<span class="metric-tag inactive">미분석</span>';
+            } else {
+                user.metrics.forEach(metric => {
+                    let tagClass = 'normal';
+                    if (user.deviation > 150) {
+                        tagClass = Math.random() > 0.5 ? 'high' : 'medium';
+                    } else if (user.deviation > 50) {
+                        tagClass = Math.random() > 0.7 ? 'medium' : 'normal';
+                    }
+                    metricTags += `<span class="metric-tag ${tagClass}">${metric}</span>`;
+                });
+            }
+
+            // 품질 점수 색상
+            let qualityColor = '#10b981';
+            if (user.quality < 70) qualityColor = '#ef4444';
+            else if (user.quality < 85) qualityColor = '#f59e0b';
+
+            tr.innerHTML = `
+                <td>
+                    <div class="user-info-cell">
+                        <div class="user-avatar">${user.name.charAt(0)}</div>
+                        <div class="user-details">
+                            <h3>${user.name}</h3>
+                            <div class="user-meta">${user.id} | ${user.dept}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="deviation-cell ${deviationClass}">
+                    ${user.deviation === 0 ? '-' : user.deviation + '%'}
+                </td>
+                <td>
+                    <div class="metric-summary">
+                        ${metricTags}
+                    </div>
+                </td>
+                <td class="deviation-cell" style="color: ${qualityColor};">
+                    ${user.quality === 0 ? '-' : user.quality + '%'}
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <a href="uba_user_detail.html?user=${user.id}" class="btn btn-primary">상세 분석</a>
+                    </div>
+                </td>
+            `;
+
+            return tr;
+        }
+
+        // 페이지네이션 렌더링
+        function renderPagination() {
+            const pagination = document.getElementById('pagination');
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+            pagination.innerHTML = '';
+
+            // 이전 버튼
+            const prevBtn = document.createElement('button');
+            prevBtn.textContent = '‹ 이전';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => changePage(currentPage - 1);
+            pagination.appendChild(prevBtn);
+
+            // 페이지 번호 버튼들
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    const pageBtn = document.createElement('button');
+                    pageBtn.textContent = i;
+                    pageBtn.className = i === currentPage ? 'active' : '';
+                    pageBtn.onclick = () => changePage(i);
+                    pagination.appendChild(pageBtn);
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.textContent = '...';
+                    ellipsis.style.padding = '10px';
+                    ellipsis.style.color = '#94a3b8';
+                    pagination.appendChild(ellipsis);
+                }
+            }
+
+            // 다음 버튼
+            const nextBtn = document.createElement('button');
+            nextBtn.textContent = '다음 ›';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => changePage(currentPage + 1);
+            pagination.appendChild(nextBtn);
+        }
+
+        // 페이지 변경
+        function changePage(page) {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                renderUserTable();
+                renderPagination();
+            }
+        }
+
+        // 검색 기능
+        document.querySelector('.search-box').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+
+            if (searchTerm === '') {
+                filteredData = [...userData];
+            } else {
+                filteredData = userData.filter(user =>
+                    user.id.toLowerCase().includes(searchTerm) ||
+                    user.name.toLowerCase().includes(searchTerm) ||
+                    user.dept.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            currentPage = 1;
+            renderUserTable();
+            renderPagination();
+        });
+    </script>
+</body>
+</html>
